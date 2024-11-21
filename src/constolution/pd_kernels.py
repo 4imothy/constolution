@@ -23,8 +23,8 @@ def horizontal_kernel(height, width):
     return h_k 
 
 def box_kernel(height, width):
-    pass
-
+    return np.ones((height, width)) / (height * width)
+     
 def vertical_kernel(height, width):
     pass
 
