@@ -12,3 +12,19 @@ def gaussian_kernel(height, width, sigma=1.0):
 
 
     return kernel
+
+def horizontal_kernel(height, width):
+    pass 
+
+def box_kernel(height, width):
+    pass
+
+def vertical_kernel(height, width):
+    pass
+
+def sobel_kernel(height, width):
+    pass
+
+def gabor_kernel(height, width):
+    pass 
+
