@@ -1,4 +1,41 @@
 import numpy as np
+from typing import Union, Tuple
+from enum import Enum, auto
+import torch
+
+class Kernels(Enum):
+    Gaussian = auto()
+    VerticalEdge = auto()
+    HorizontalEdge = auto()
+    SobelVerticalEdge = auto()
+    SobelHorizontalEdge = auto()
+    Box = auto()
+
+def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size: Union[int, Tuple[int,int]], groups: int, **kwargs) -> torch.Tensor:
+    if isinstance(spatial_size, int):
+        height, width = spatial_size, spatial_size
+    else:
+        height, width = spatial_size[0], spatial_size[1]
+    match type:
+        case Kernels.Gaussian:
+            kernel = gaussian(height, width, **kwargs)
+        case Kernels.VerticalEdge:
+            kernel = vertical_edge(height, width, **kwargs)
+        case Kernels.VerticalEdge:
+            kernel = horizontal_edge(height, width, **kwargs)
+        case Kernels.SobelVerticalEdge:
+            kernel = sobel_vertical_edge(height, width, **kwargs)
+        case Kernels.SobelHorizontalEdge:
+            kernel = sobel_horizontal_edge(height, width, **kwargs)
+        case Kernels.Box:
+            kernel = box(height, width, **kwargs)
+        case _:
+            raise ValueError(f'unsupported kernel type: {type}')
+
+    kernel = torch.tile(torch.Tensor(kernel), (out_channels, in_channels //
+                                               groups, 1, 1))
+    return kernel
+
 
 def gaussian(height, width, sigma=1.0) -> np.ndarray:
     y, x = np.meshgrid(
@@ -21,7 +58,7 @@ def vertical_edge(height, width) -> np.ndarray:
 
     return kernel
 
-def sobel_horizontal(height, width) -> np.ndarray:
+def sobel_horizontal_edge(height, width) -> np.ndarray:
     kernel = np.zeros((height, width))
     center_h, center_w = height // 2, width // 2
     y, x = np.meshgrid(range(height), range(width), indexing='ij')
@@ -42,7 +79,7 @@ def sobel_horizontal(height, width) -> np.ndarray:
 
     return kernel
 
-def sobel_vertical(height, width) -> np.ndarray:
+def sobel_vertical_edge(height, width) -> np.ndarray:
     kernel = np.zeros((height, width))
     center_h, center_w = height // 2, width // 2
     y, x = np.meshgrid(range(height), range(width), indexing='ij')
@@ -63,7 +100,7 @@ def sobel_vertical(height, width) -> np.ndarray:
 
     return kernel
 
-def horizontal_kernel(height, width) -> np.ndarray:
+def horizontal_edge(height, width) -> np.ndarray:
     h_k = np.zeros((height, width))
     half_width = width // 2
     h_k[:(half_width) - (1 - width % 2), :] = 1
@@ -71,7 +108,7 @@ def horizontal_kernel(height, width) -> np.ndarray:
 
     return h_k
 
-def box_kernel(height, width):
+def box(height, width):
     return np.ones((height, width)) / (height * width)
 
 def gabor_kernel(height, width):
