@@ -21,7 +21,7 @@ def vertical_edge(height, width) -> np.ndarray:
 
     return kernel
 
-def sobel_horizontal(height, width):
+def sobel_horizontal(height, width) -> np.ndarray:
     kernel = np.zeros((height, width))
     center_h, center_w = height // 2, width // 2
     y, x = np.meshgrid(range(height), range(width), indexing='ij')
@@ -42,7 +42,7 @@ def sobel_horizontal(height, width):
 
     return kernel
 
-def sobel_vertical(height, width):
+def sobel_vertical(height, width) -> np.ndarray:
     kernel = np.zeros((height, width))
     center_h, center_w = height // 2, width // 2
     y, x = np.meshgrid(range(height), range(width), indexing='ij')
@@ -63,24 +63,17 @@ def sobel_vertical(height, width):
 
     return kernel
 
-# nd array return type 
-def horizontal_kernel(height, width):
+def horizontal_kernel(height, width) -> np.ndarray:
     h_k = np.zeros((height, width))
     half_width = width // 2
     h_k[:(half_width) - (1 - width % 2), :] = 1
-    h_k[half_width + 1:, :] = -1 
+    h_k[half_width + 1:, :] = -1
 
-    return h_k 
+    return h_k
 
 def box_kernel(height, width):
     return np.ones((height, width)) / (height * width)
-     
-def vertical_kernel(height, width):
-    pass
-
-def sobel_kernel(height, width):
-    pass
 
 def gabor_kernel(height, width):
-    pass 
+    pass
 
