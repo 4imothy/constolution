@@ -2,6 +2,7 @@ import numpy as np
 from typing import Union, Tuple
 from enum import Enum, auto
 import torch
+import cv2
 
 class Kernels(Enum):
     Gaussian = auto()
@@ -111,9 +112,10 @@ def horizontal_edge(height, width) -> np.ndarray:
 def box(height, width):
     return np.ones((height, width)) / (height * width)
 
-def gabor_kernel(height, width):
+def gabor_kernel(height, width, sigma =1 , theta = 0, lambda_ = 1, gamma = 1,psi = 1,ktype = cv2.CV_32F)-> np.ndarray:
+    kernel = cv2.getGaborKernel((height, width), sigma, theta, lambda_, gamma, psi, ktype)
 
-    pass
+    return kernel
 
 def identity(height, width) -> np.ndarray:
     if height != width:
