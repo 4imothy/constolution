@@ -118,32 +118,21 @@ def gabor_kernel(height, width):
 def identity(height, width) -> np.ndarray:
     if height != width:
         return None
-    
+
     kernel = np.eye(height)
     return kernel
 
-def laplacian(height, width, sigma) -> np.ndarray:
-        y, x = np.meshgrid(
-        np.linspace(-(height // 2), height // 2, height),
-        np.linspace(-(width // 2), width // 2, width),
-        indexing='ij'
-        )
+def laplacian(height, width, sigma=1.0) -> np.ndarray:
+    assert height % 2 and width % 2
+    y, x = np.meshgrid(
+            np.linspace(-(height // 2), height // 2, height),
+            np.linspace(-(width // 2), width // 2, width),
+            indexing='ij'
+            )
 
-        first_term = -1/(np.pi * sigma**4)
+    first_term = -1/(np.pi * sigma**4)
+    second_term = 1 - ((x**2 + y**2)/(2*sigma**2))
+    third_term = np.exp(-(x**2 + y**2)/(2*sigma**2))
 
-        second_term = 1 - ((x**2 + y**2)/(2*sigma**2))
-
-        third_term = np.exp(-(x**2 + y**2)/(2*sigma**2))
-
-        log = first_term*second_term*third_term
-        kernel = log/np.sum(np.abs(log))
-
-        return kernel
-
-
-
-
-
-
-
-
+    kernel = first_term*second_term*third_term
+    return kernel/np.sum(np.abs(kernel))
