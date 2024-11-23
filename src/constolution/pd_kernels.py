@@ -114,3 +114,9 @@ def box(height, width):
 def gabor_kernel(height, width):
     pass
 
+def identity(height, width):
+    if height != width:
+        return None
+    return np.eye(height)
+
+
