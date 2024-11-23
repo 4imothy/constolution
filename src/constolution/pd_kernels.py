@@ -112,14 +112,13 @@ def horizontal_edge(height, width) -> np.ndarray:
 def box(height, width):
     return np.ones((height, width)) / (height * width)
 
-def gabor_kernel(height, width, sigma =1 , theta = 0, lambda_ = 1, gamma = 1,psi = 1,ktype = cv2.CV_32F)-> np.ndarray:
+def gabor(height, width, sigma =1 , theta = 0, lambda_ = 1, gamma = 1,psi = 1,ktype = cv2.CV_32F)-> np.ndarray:
     kernel = cv2.getGaborKernel((height, width), sigma, theta, lambda_, gamma, psi, ktype)
 
     return kernel
 
 def identity(height, width) -> np.ndarray:
-    if height != width:
-        return None
+    assert height == width
 
     kernel = np.eye(height)
     return kernel
