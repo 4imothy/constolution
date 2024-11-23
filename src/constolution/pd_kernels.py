@@ -112,6 +112,7 @@ def box(height, width):
     return np.ones((height, width)) / (height * width)
 
 def gabor_kernel(height, width):
+
     pass
 
 def identity(height, width) -> np.ndarray:
@@ -135,11 +136,9 @@ def laplacian(height, width, sigma) -> np.ndarray:
         third_term = np.exp(-(x**2 + y**2)/(2*sigma**2))
 
         log = first_term*second_term*third_term
-        kernel = log
+        kernel = log/np.sum(np.abs(log))
 
         return kernel
-
-print(laplacian(height = 9, width = 9, sigma = 1.4))
 
 
 
