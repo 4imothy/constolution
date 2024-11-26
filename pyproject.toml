@@ -3,7 +3,8 @@ name = "constolution"
 version = "0.1.0"
 readme = "README.rst"
 dependencies = [
-    "torch>=2.4.0"
+    "torch>=2.4.0",
+    "opencv-python"
 ]
 
 [build-system]

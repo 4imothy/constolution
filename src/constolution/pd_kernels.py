@@ -2,6 +2,7 @@ import numpy as np
 from typing import Union, Tuple
 from enum import Enum, auto
 import torch
+import cv2
 
 class Kernels(Enum):
     Gaussian = auto()
@@ -11,7 +12,11 @@ class Kernels(Enum):
     SobelHorizontalEdge = auto()
     Box = auto()
 
-def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size: Union[int, Tuple[int,int]], groups: int, **kwargs) -> torch.Tensor:
+# TODO for the edge ones we can swap between left and right and top and bottom
+# TODO can do average
+
+def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size:
+              Union[int, Tuple[int,int]], groups: int, **kwargs) -> torch.Tensor:
     if isinstance(spatial_size, int):
         height, width = spatial_size, spatial_size
     else:
@@ -38,6 +43,7 @@ def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size: 
 
 
 def gaussian(height, width, sigma=1.0) -> np.ndarray:
+    print(sigma)
     y, x = np.meshgrid(
         np.linspace(-(height // 2), height // 2, height),
         np.linspace(-(width // 2), width // 2, width),
@@ -111,13 +117,13 @@ def horizontal_edge(height, width) -> np.ndarray:
 def box(height, width):
     return np.ones((height, width)) / (height * width)
 
-def gabor_kernel(height, width):
+def gabor(height, width, sigma =1 , theta = 0, lambda_ = 1, gamma = 1,psi = 1,ktype = cv2.CV_32F)-> np.ndarray:
+    kernel = cv2.getGaborKernel((height, width), sigma, theta, lambda_, gamma, psi, ktype)
 
-    pass
+    return kernel
 
 def identity(height, width) -> np.ndarray:
-    if height != width:
-        return None
+    assert height == width
 
     kernel = np.eye(height)
     return kernel
@@ -135,4 +141,16 @@ def laplacian(height, width, sigma=1.0) -> np.ndarray:
     third_term = np.exp(-(x**2 + y**2)/(2*sigma**2))
 
     kernel = first_term*second_term*third_term
+    return kernel/np.sum(np.abs(kernel))
+
+
+def schmid(height, width, sigma=1.0, tau=1) -> np.ndarray:
+    y, x = np.meshgrid(
+            np.linspace(-(height // 2), height // 2, height),
+            np.linspace(-(width // 2), width // 2, width),
+            indexing='ij'
+            )
+
+    r = x**2 + y**2
+    kernel = np.exp(-r/(2 * sigma**2)) * np.cos((2 * np.pi * tau * r) / sigma)
     return kernel/np.sum(np.abs(kernel))
