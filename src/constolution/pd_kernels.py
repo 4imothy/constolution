@@ -11,6 +11,10 @@ class Kernels(Enum):
     SobelVerticalEdge = auto()
     SobelHorizontalEdge = auto()
     Box = auto()
+    Gabor = auto()
+    Identity = auto()
+    Schmid = auto()
+    Laplacian = auto()
 
 # TODO for the edge ones we can swap between left and right and top and bottom
 # TODO can do average
@@ -34,6 +38,14 @@ def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size:
             kernel = sobel_horizontal_edge(height, width, **kwargs)
         case Kernels.Box:
             kernel = box(height, width, **kwargs)
+        case Kernels.Gabor:
+            kernel = gabor(height, width, **kwargs)
+        case Kernels.Identity:
+            kernel = identity(height, width, **kwargs)
+        case Kernels.Schmid:
+            kernel = schmid(height, width, **kwargs)
+        case Kernels.Laplacian:
+            kernel = laplacian(height, width, **kwargs)
         case _:
             raise ValueError(f'unsupported kernel type: {type}')
 
