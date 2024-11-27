@@ -84,5 +84,37 @@ class MobileNet(nn.module):
         x = self.classfier(x)
         return x
     
+net = MobileNet(100)
+criterion = nn.CrossEntropyLoss()
+optim = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001)
+net.to(device)
 
+def train(epochs, trainloader):
+    
+    for epoch in range(epochs):  
+
+        running_loss = 0.0
+        for i, data in enumerate(trainloader, 0):
+            
+            inputs, labels = data
+
+            optim.zero_grad()
+            
+            outputs = net(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optim.step()
+            
+            running_loss += loss.item()
+            if i % 2000 == 1999:    # print every 2000 mini-batches
+                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
+                running_loss = 0.0
+        # save key metrics in json file after an epoch is done
+    
+    print('Finished Training')
+
+if __name__ == "__main__":
+    # download dataset here and get train and dataloaders here
+
+    pass
 

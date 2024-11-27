@@ -21,8 +21,7 @@ class earlyBlock(nn.Module):
         input_channels, output_channels, stride=stride)
 
         self.filter4 = ct.Constolution2D(ct.Constolution2D.Gaussian, 
-        input_channels, output_channels, stride=stride
-        )
+        input_channels, output_channels, stride=stride)
         # FIFTH KERNEL TBD
 
     "gabor, sobel, schmidit, gaussian, *five_one"
@@ -37,9 +36,22 @@ class earlyBlock(nn.Module):
         pass
 
 
-class middleBlock:
+class middleBlock(nn.Module):
 
-    "kernel1, kernel2, kernel3, kernel4, kernel5"
+    def __init__(self, input_channels, output_channels, stride):
+        super(earlyBlock, self).__init__()
+        "kernel1, kernel2, kernel3, kernel4, kernel5"
+        self.filter1 = ct.Constolution2D(ct.Kernels.Gabor, 
+            input_channels, output_channels, stride=stride)
+        
+        self.filter2 = ct.Constolution2D(ct.Kernels.Gabor, 
+            input_channels, output_channels, stride=stride)
+        
+        self.filter3 = ct.Constolution2D(ct.Kernels.Gabor, 
+            input_channels, output_channels, stride=stride)
+        
+        self.filter4 = ct.Constolution2D(ct.Kernels.Gabor, 
+            input_channels, output_channels, stride=stride)
 
 
     def forward():
