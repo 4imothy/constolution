@@ -75,6 +75,7 @@ class MobileNet(nn.module):
         self.avgpool = nn.AvgPool2d(1)
         self.classfier = nn.Sequential(
             nn.Linear(1024, n_classes),
+            nn.Softmax()
         )
 
     def forward(self, x):
