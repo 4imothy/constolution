@@ -48,7 +48,7 @@ class MobileNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(32)
         )
-
+        
         # second layer 
         self.features = nn.Sequential(
             self.features,
@@ -75,8 +75,7 @@ class MobileNet(nn.Module):
         # avg pooling
         self.avgpool = nn.AvgPool2d(1)
         self.classfier = nn.Sequential(
-            nn.Linear(1024, n_classes),
-            nn.Softmax(dim=1)
+            nn.Linear(1024, n_classes)
         )
 
     def forward(self, x):
@@ -105,8 +104,7 @@ def train(epochs, train_loader, test_loader):
             labels = labels.to(device)
             optim.zero_grad()
             outputs = net(images)
-            label_vecs = torch.eye(N_CLASSES, device=device)[labels]
-            loss = criterion(outputs, label_vecs)
+            loss = criterion(outputs, labels)
             loss.backward()
             optim.step()
             e_loss += loss.item()
@@ -126,8 +124,7 @@ def train(epochs, train_loader, test_loader):
                 images = images.to(device)
                 labels = labels.to(device)
                 outputs = net(images)
-                label_vecs = torch.eye(N_CLASSES, device=device)[labels]
-                loss = criterion(outputs, label_vecs)
+                loss = criterion(outputs, labels)
                 test_loss += loss
                 _, predicted = torch.max(outputs, 1)
                 test_count += labels.size(0)
@@ -147,14 +144,13 @@ if __name__ == "__main__":
     # download dataset here and get train and dataloaders here
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
-    trainloader= torch.utils.data.DataLoader(trainset, batch_size=128,
+    trainloader= torch.utils.data.DataLoader(trainset, batch_size=64,
                                             shuffle=True, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                         download=True, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=128,
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64,
                                             shuffle=False, num_workers=2)
     
     train(10, trainloader, testloader)
     
-
