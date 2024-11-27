@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
+import torch.nn.functional as F
 
 # move to device if available
 device = torch.device(
@@ -16,7 +17,7 @@ transform = transforms.Compose(
      transforms.Normalize((0.5, 0.5, 0.5), (0.2, 0.2, 0.2))])
 
 
-class DepthPointWiseConv(nn.module):
+class DepthPointWiseConv(nn.Module):
     def __init__(self, in_channels, out_channels, stride):
         super(DepthPointWiseConv, self).__init__()
 
@@ -38,13 +39,13 @@ class DepthPointWiseConv(nn.module):
         return x
 
 
-class MobileNet(nn.module):
+class MobileNet(nn.Module):
     def __init__(self, n_classes):
-        
+        super(MobileNet, self).__init__()
         # first layer 
         self.features = nn.Sequential(
             nn.Conv2d(3, 32, kernel_size=3, stride=2, padding=1),
-            nn.reLU(inplace=True),
+            nn.ReLU(inplace=True),
             nn.BatchNorm2d(32)
         )
 
@@ -75,47 +76,87 @@ class MobileNet(nn.module):
         self.avgpool = nn.AvgPool2d(1)
         self.classfier = nn.Sequential(
             nn.Linear(1024, n_classes),
-            nn.Softmax()
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x):
+        x = x.to(device)
         x = self.features(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.classfier(x)
         return x
     
-net = MobileNet(100)
+net = MobileNet(10)
 criterion = nn.CrossEntropyLoss()
 optim = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001)
 net.to(device)
+N_CLASSES = 10
 
-def train(epochs, trainloader):
-    
-    for epoch in range(epochs):  
-
-        running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
-            
-            inputs, labels = data
-
+def train(epochs, train_loader, test_loader):
+    net.train()
+    print(f"{'Epoch':<6} {'Train Loss':<12} {'Train Acc':<12} {'Test Loss':<12} {'Test Acc':<12}")
+    for epoch in range(epochs):
+        e_loss = 0
+        train_count = 0
+        correct_train = 0
+        for images, labels in train_loader:
+            images = images.to(device)
+            labels = labels.to(device)
             optim.zero_grad()
-            
-            outputs = net(inputs)
-            loss = criterion(outputs, labels)
+            outputs = net(images)
+            label_vecs = torch.eye(N_CLASSES, device=device)[labels]
+            loss = criterion(outputs, label_vecs)
             loss.backward()
             optim.step()
-            
-            running_loss += loss.item()
-            if i % 2000 == 1999:    # print every 2000 mini-batches
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
-                running_loss = 0.0
-        # save key metrics in json file after an epoch is done
+            e_loss += loss.item()
+
+            _, predicted = torch.max(outputs, 1)
+            train_count += labels.size(0)
+            correct_train += (predicted == labels).sum().item()
+
+        train_accuracy = 100 * correct_train / train_count
+        train_loss = e_loss / len(train_loader)
+        net.eval()
+        correct_test = 0
+        test_count = 0
+        test_loss = 0
+        with torch.no_grad():
+            for images, labels in test_loader:
+                images = images.to(device)
+                labels = labels.to(device)
+                outputs = net(images)
+                label_vecs = torch.eye(N_CLASSES)[labels.to(device)]
+                loss = criterion(outputs, label_vecs)
+                test_loss += loss
+                _, predicted = torch.max(outputs, 1)
+                test_count += labels.size(0)
+                correct_test += (predicted == labels).sum().item()
+                print("correct_test", correct_test)
+                print("test_loss", test_loss)
+            test_accuracy = 100 * correct_test / test_count
+            test_loss = test_loss / len(test_loader)
+        epoch_str = f'{epoch+1}/{epochs}'
+        print(f'{epoch_str:<6} {train_loss:<12.4f}{train_accuracy:<12.2f} {test_loss:<12.2f} {test_accuracy:<12.2f}')
+
+
+
+    # save key metrics in json file after an epoch is done
     
     print('Finished Training')
 
 if __name__ == "__main__":
     # download dataset here and get train and dataloaders here
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                        download=True, transform=transform)
+    trainloader= torch.utils.data.DataLoader(trainset, batch_size=16,
+                                            shuffle=True, num_workers=2)
 
-    pass
+    testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                        download=True, transform=transform)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=16,
+                                            shuffle=False, num_workers=2)
+    
+    train(10, trainloader, testloader)
+    
 
