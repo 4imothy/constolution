@@ -166,3 +166,21 @@ def schmid(height, width, sigma=1.0, tau=1) -> np.ndarray:
     r = x**2 + y**2
     kernel = np.exp(-r/(2 * sigma**2)) * np.cos((2 * np.pi * tau * r) / sigma)
     return kernel/np.sum(np.abs(kernel))
+
+def random_basis_gaussian(height = 3, width = 3):
+    return np.random.normal(loc = 0, scale=1,size =(height,width))
+
+def random_basis_uniform(height = 3, width = 3):
+    return np.random.randn(height, width)
+
+def random_basis_gaussian_sparse(height = 3, width = 3, threshold_pct =75):
+    kernel = np.random.normal(loc = 0, scale=1,size =(height,width))
+    kernel_pct = np.percentile(kernel, threshold_pct)
+    kernel = np.where(kernel > kernel_pct, kernel, 0)
+    return kernel
+
+def random_basis_uniform_sparse(height = 3, width = 3, threshold_pct = 75):
+    kernel = np.random.randn(height, width)
+    kernel_pct = np.percentile(kernel, threshold_pct)
+    kernel = np.where(kernel > kernel_pct, kernel, 0)
+    return kernel
