@@ -15,6 +15,10 @@ class Kernels(Enum):
     Identity = auto()
     Schmid = auto()
     Laplacian = auto()
+    random_basis_gaussian = auto()
+    random_basis_uniform = auto()
+    random_basis_gaussian_sparse = auto()
+    random_basis_uniform_sparse = auto()
 
 # TODO for the edge ones we can swap between left and right and top and bottom
 # TODO can do average
@@ -46,6 +50,14 @@ def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size:
             kernel = schmid(height, width, **kwargs)
         case Kernels.Laplacian:
             kernel = laplacian(height, width, **kwargs)
+        case Kernels.random_basis_gaussian:
+            kernel = random_basis_gaussian(height, width, **kwargs)
+        case Kernels.random_basis_uniform:
+            kernel = random_basis_uniform(height, width, **kwargs)
+        case Kernels.random_basis_gaussian_sparse:
+            kernel = random_basis_gaussian_sparse(height, width, **kwargs)
+        case Kernels.random_basis_uniform_sparse:
+            kernel = random_basis_uniform_sparse(height, width, **kwargs)
         case _:
             raise ValueError(f'unsupported kernel type: {type}')
 
@@ -167,19 +179,19 @@ def schmid(height, width, sigma=1.0, tau=1) -> np.ndarray:
     kernel = np.exp(-r/(2 * sigma**2)) * np.cos((2 * np.pi * tau * r) / sigma)
     return kernel/np.sum(np.abs(kernel))
 
-def random_basis_gaussian(height = 3, width = 3):
+def random_basis_gaussian(height, width):
     return np.random.normal(loc = 0, scale=1,size =(height,width))
 
-def random_basis_uniform(height = 3, width = 3):
+def random_basis_uniform(height, width):
     return np.random.randn(height, width)
 
-def random_basis_gaussian_sparse(height = 3, width = 3, threshold_pct =75):
+def random_basis_gaussian_sparse(height, width, threshold_pct):
     kernel = np.random.normal(loc = 0, scale=1,size =(height,width))
     kernel_pct = np.percentile(kernel, threshold_pct)
     kernel = np.where(kernel > kernel_pct, kernel, 0)
     return kernel
 
-def random_basis_uniform_sparse(height = 3, width = 3, threshold_pct = 75):
+def random_basis_uniform_sparse(height, width, threshold_pct):
     kernel = np.random.randn(height, width)
     kernel_pct = np.percentile(kernel, threshold_pct)
     kernel = np.where(kernel > kernel_pct, kernel, 0)
