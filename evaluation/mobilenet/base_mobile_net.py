@@ -126,14 +126,12 @@ def train(epochs, train_loader, test_loader):
                 images = images.to(device)
                 labels = labels.to(device)
                 outputs = net(images)
-                label_vecs = torch.eye(N_CLASSES)[labels.to(device)]
+                label_vecs = torch.eye(N_CLASSES, device=device)[labels]
                 loss = criterion(outputs, label_vecs)
                 test_loss += loss
                 _, predicted = torch.max(outputs, 1)
                 test_count += labels.size(0)
                 correct_test += (predicted == labels).sum().item()
-                print("correct_test", correct_test)
-                print("test_loss", test_loss)
             test_accuracy = 100 * correct_test / test_count
             test_loss = test_loss / len(test_loader)
         epoch_str = f'{epoch+1}/{epochs}'
@@ -149,12 +147,12 @@ if __name__ == "__main__":
     # download dataset here and get train and dataloaders here
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
-    trainloader= torch.utils.data.DataLoader(trainset, batch_size=16,
+    trainloader= torch.utils.data.DataLoader(trainset, batch_size=128,
                                             shuffle=True, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                         download=True, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=16,
+    testloader = torch.utils.data.DataLoader(testset, batch_size=128,
                                             shuffle=False, num_workers=2)
     
     train(10, trainloader, testloader)
