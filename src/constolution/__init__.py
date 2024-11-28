@@ -35,13 +35,10 @@ class Constolution2D(nn.Module):
 
 class BaseInceptionConstolution2D(nn.Module):
     def __init__(self, operators: Sequence[Union[nn.Sequential, Constolution2D]],
-                 out_channels_of_paths: Sequence[int],
-                 weighted_convolution=True, ):
+                 total_out_channels: int,
+                 weighted_convolution=True):
         self.operators = operators
         self.weight = None
-        total_out_channels = 0
-        for oc in out_channels_of_paths:
-            total_out_channels += oc
         if weighted_convolution:
             self.weight = nn.Conv2d(total_out_channels, 1, (1,1), bias=True)
 
@@ -53,3 +50,14 @@ class BaseInceptionConstolution2D(nn.Module):
         if self.weight is not None:
             return self.weight(torch.cat(outs, dim=1 if batched else 0))
         return torch.cat(outs, dim=1 if batched else 0)
+
+class EdgeInception(BaseInceptionConstolution2D):
+    def __init__(self, in_channels: int, out_channels: int,
+                 spatial_size: Union[int, Tuple[int, int]], stride=1,
+                 padding=1, dilation=1, groups=1, bias=True, depthwise=False):
+        operators = [Constolution2D(kern, in_channels, out_channels,
+                                    spatial_size, stride, padding, dilation,
+                                    groups, bias, depthwise) for kern in
+                     [Kernels.VerticalEdge, Kernels.HorizontalEdge,
+                      Kernels.SobelVerticalEdge, Kernels.SobelHorizontalEdge]]
+        super().__init__(operators, out_channels * len(operators))
