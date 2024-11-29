@@ -15,23 +15,23 @@ class CustomResNet(nn.Module):
         super(CustomResNet, self).__init__()
         
         self.early_stage = nn.Sequential(
-            EarlyBlock(input_channels=3, output_channels=32, stride=1, spatial_size=(32, 32)),
-            EarlyBlock(input_channels=32, output_channels=64, stride=2, spatial_size=(32, 32))
+            EarlyBlock(input_channels=3, output_channels=32, stride=1, spatial_size=(3, 3)),
+            EarlyBlock(input_channels=32, output_channels=64, stride=2, spatial_size=(3, 3))
         )
         
         self.layer1 = nn.Sequential(
-            MiddleBlock(input_channels=64, output_channels=128, stride=1, spatial_size=(16, 16)),
-            MiddleBlock(input_channels=128, output_channels=128, stride=1, spatial_size=(16, 16))
+            MiddleBlock(input_channels=64, output_channels=128, stride=1, spatial_size=(3, 3)),
+            MiddleBlock(input_channels=128, output_channels=128, stride=1, spatial_size=(3, 3))
         )
 
         self.layer2 = nn.Sequential(
-            MiddleBlock(input_channels=128, output_channels=256, stride=2, spatial_size=(8, 8)),
-            MiddleBlock(input_channels=256, output_channels=256, stride=1, spatial_size=(8, 8))
+            MiddleBlock(input_channels=128, output_channels=256, stride=2, spatial_size=(3, 3)),
+            MiddleBlock(input_channels=256, output_channels=256, stride=1, spatial_size=(3, 3))
         )
         
         self.layer3 = nn.Sequential(
-            MiddleBlock(input_channels=256, output_channels=512, stride=2, spatial_size=(4, 4)),
-            MiddleBlock(input_channels=512, output_channels=512, stride=1, spatial_size=(4, 4))
+            MiddleBlock(input_channels=256, output_channels=512, stride=2, spatial_size=(3, 3)),
+            MiddleBlock(input_channels=512, output_channels=512, stride=1, spatial_size=(3, 3))
         )
         
         self.layer4 = nn.Sequential(
