@@ -21,6 +21,12 @@ class EarlyBlock(nn.Module):
             ct.Constolution2D(kernel, input_channels, output_channels, stride=stride, spatial_size=spatial_size)
             for kernel in kernel_list
         ])
+        
+        self.combine = nn.Conv2d(
+            output_channels * len(kernel_list),
+            output_channels,
+            kernel_size=1
+        )
     
     def forward(self, x):
         filter_outputs = [filter_layer(x) for filter_layer in self.filters]        
@@ -44,6 +50,12 @@ class MiddleBlock(nn.Module):
             ct.Constolution2D(kernel, input_channels, output_channels, stride=stride, spatial_size=spatial_size)
             for kernel in kernel_list
         ])
+        
+        self.combine = nn.Conv2d(
+            output_channels * len(kernel_list),
+            output_channels,
+            kernel_size=1
+        )
     
     def forward(self, x):
         filter_outputs = [filter_layer(x) for filter_layer in self.filters]        
