@@ -6,7 +6,7 @@ from torch import nn
 
 
 class EarlyBlock(nn.Module):
-    def __init__(self, input_channels, output_channels, stride):
+    def __init__(self, input_channels, output_channels, stride, spatial_size):
 
         super(EarlyBlock, self).__init__()
         
@@ -18,7 +18,7 @@ class EarlyBlock(nn.Module):
             ct.Kernels.SobelVerticalEdge
         ]
         self.filters = nn.ModuleList([
-            ct.Constolution2D(kernel, input_channels, output_channels, stride=stride)
+            ct.Constolution2D(kernel, input_channels, output_channels, stride=stride, spatial_size=spatial_size)
             for kernel in kernel_list
         ])
     
@@ -29,7 +29,7 @@ class EarlyBlock(nn.Module):
 
 
 class MiddleBlock(nn.Module):
-    def __init__(self, input_channels, output_channels, stride):
+    def __init__(self, input_channels, output_channels, stride, spatial_size):
 
         super(MiddleBlock, self).__init__()
         
@@ -41,7 +41,7 @@ class MiddleBlock(nn.Module):
             ct.Kernels.random_basis_gaussian_sparse
         ]
         self.filters = nn.ModuleList([
-            ct.Constolution2D(kernel, input_channels, output_channels, stride=stride)
+            ct.Constolution2D(kernel, input_channels, output_channels, stride=stride, spatial_size=spatial_size)
             for kernel in kernel_list
         ])
     
