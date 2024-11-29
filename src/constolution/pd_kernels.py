@@ -29,37 +29,38 @@ def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size:
         height, width = spatial_size, spatial_size
     else:
         height, width = spatial_size[0], spatial_size[1]
-    match type:
-        case Kernels.Gaussian:
-            kernel = gaussian(height, width, **kwargs)
-        case Kernels.VerticalEdge:
-            kernel = vertical_edge(height, width, **kwargs)
-        case Kernels.VerticalEdge:
-            kernel = horizontal_edge(height, width, **kwargs)
-        case Kernels.SobelVerticalEdge:
-            kernel = sobel_vertical_edge(height, width, **kwargs)
-        case Kernels.SobelHorizontalEdge:
-            kernel = sobel_horizontal_edge(height, width, **kwargs)
-        case Kernels.Box:
-            kernel = box(height, width, **kwargs)
-        case Kernels.Gabor:
-            kernel = gabor(height, width, **kwargs)
-        case Kernels.Identity:
-            kernel = identity(height, width, **kwargs)
-        case Kernels.Schmid:
-            kernel = schmid(height, width, **kwargs)
-        case Kernels.Laplacian:
-            kernel = laplacian(height, width, **kwargs)
-        case Kernels.random_basis_gaussian:
-            kernel = random_basis_gaussian(height, width, **kwargs)
-        case Kernels.random_basis_uniform:
-            kernel = random_basis_uniform(height, width, **kwargs)
-        case Kernels.random_basis_gaussian_sparse:
-            kernel = random_basis_gaussian_sparse(height, width, **kwargs)
-        case Kernels.random_basis_uniform_sparse:
-            kernel = random_basis_uniform_sparse(height, width, **kwargs)
-        case _:
-            raise ValueError(f'unsupported kernel type: {type}')
+        
+    if type == Kernels.Gaussian:
+        kernel = gaussian(height, width, **kwargs)
+    elif type == Kernels.VerticalEdge:
+        kernel = vertical_edge(height, width, **kwargs)
+    elif type == Kernels.HorizontalEdge:
+        kernel = horizontal_edge(height, width, **kwargs)
+    elif type == Kernels.SobelVerticalEdge:
+        kernel = sobel_vertical_edge(height, width, **kwargs)
+    elif type == Kernels.SobelHorizontalEdge:
+        kernel = sobel_horizontal_edge(height, width, **kwargs)
+    elif type == Kernels.Box:
+        kernel = box(height, width, **kwargs)
+    elif type == Kernels.Gabor:
+        kernel = gabor(height, width, **kwargs)
+    elif type == Kernels.Identity:
+        kernel = identity(height, width, **kwargs)
+    elif type == Kernels.Schmid:
+        kernel = schmid(height, width, **kwargs)
+    elif type == Kernels.Laplacian:
+        kernel = laplacian(height, width, **kwargs)
+    elif type == Kernels.random_basis_gaussian:
+        kernel = random_basis_gaussian(height, width, **kwargs)
+    elif type == Kernels.random_basis_uniform:
+        kernel = random_basis_uniform(height, width, **kwargs)
+    elif type == Kernels.random_basis_gaussian_sparse:
+        kernel = random_basis_gaussian_sparse(height, width, **kwargs)
+    elif type == Kernels.random_basis_uniform_sparse:
+        kernel = random_basis_uniform_sparse(height, width, **kwargs)
+    else:
+        raise ValueError(f'unsupported kernel type: {type}')
+
 
     kernel = torch.tile(torch.Tensor(kernel), (out_channels, in_channels //
                                                groups, 1, 1))
