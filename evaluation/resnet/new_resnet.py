@@ -63,8 +63,9 @@ class CustomResNet(nn.Module):
             ResidualBlock(64, 64, stride=1)
         )
         self.layer2 = nn.Sequential(
-            ResidualBlock(64, 128, stride=2),
-            ResidualBlock(128, 128, stride=1)
+            MiddleBlock(input_channels=64, output_channels=128, stride=1, spatial_size=(3, 3)),
+            MiddleBlock(input_channels=128, output_channels=128, stride=1, spatial_size=(3, 3))
+
         )
         self.layer3 = nn.Sequential(
             ResidualBlock(128, 256, stride=2),
