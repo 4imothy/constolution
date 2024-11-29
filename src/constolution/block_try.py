@@ -5,10 +5,10 @@ import constolution as ct
 from torch import nn
 
 
-class earlyBlock(nn.Module):
+class EarlyBlock(nn.Module):
     def __init__(self, input_channels, output_channels, stride):
 
-        super(earlyBlock, self).__init__()
+        super(EarlyBlock, self).__init__()
         
         kernel_list = [
             ct.Kernels.Gaussian, 
@@ -28,7 +28,7 @@ class earlyBlock(nn.Module):
         return self.combine(combined_output)
 
 
-class middleBlock(nn.Module):
+class MiddleBlock(nn.Module):
     def __init__(self, input_channels, output_channels, stride):
 
         super(MiddleBlock, self).__init__()
