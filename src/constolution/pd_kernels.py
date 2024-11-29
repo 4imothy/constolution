@@ -29,7 +29,6 @@ def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size:
         height, width = spatial_size, spatial_size
     else:
         height, width = spatial_size[0], spatial_size[1]
-        
     if type == Kernels.Gaussian:
         kernel = gaussian(height, width, **kwargs)
     elif type == Kernels.VerticalEdge:
