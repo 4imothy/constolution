@@ -3,4 +3,4 @@ venv
 .venv
 datasets
 __pycache__
-evaluation/mobilenet/data/
+evaluation/alexnet/data/

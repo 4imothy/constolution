@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
+import torchvision.transforms as transforms
 import torch.optim as optim
 import torchvision
-import torchvision.transforms as transforms
 import torch.nn.functional as F
 
-# move to device if available
+
+#set device
 device = torch.device(
     'cuda' if torch.cuda.is_available() else (
         'mps' if torch.backends.mps.is_available() else 'cpu'
@@ -16,77 +17,96 @@ transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.2, 0.2, 0.2))])
 
+trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                        download=True, transform=transform)
+trainloader= torch.utils.data.DataLoader(trainset, batch_size=16,
+                                        shuffle=True, num_workers=2)
 
-class DepthPointWiseConv(nn.Module):
-    def __init__(self, in_channels, out_channels, stride):
-        super(DepthPointWiseConv, self).__init__()
+testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                    download=True, transform=transform)
+testloader = torch.utils.data.DataLoader(testset, batch_size=16,
+                                        shuffle=False, num_workers=2)
 
-        self.depthwise = nn.Conv2d(in_channels, in_channels, 
-                            kernel_size=3, stride=stride, padding=1, groups=in_channels)
-        self.bn1 = nn.BatchNorm2d(in_channels)
-        self.pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1, 
-                                   stride=1, padding=0, groups=1)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.depthwise(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.pointwise(x)
-        x = self.bn2(x)
-        x = self.relu(x)
-        return x
+classes = ('plane', 'car', 'bird', 'cat',
+        'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 
-class MobileNet(nn.Module):
-    def __init__(self, n_classes):
-        super(MobileNet, self).__init__()
-        # first layer 
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(inplace=True),
-            nn.BatchNorm2d(32)
-        )
-        
-        # second layer 
-        self.features = nn.Sequential(
-            self.features,
-            
-            DepthPointWiseConv(32, 64, 1),
-            DepthPointWiseConv(64, 128, 2),
-            DepthPointWiseConv(128, 128, 1),
-            DepthPointWiseConv(128, 256, 2),
-            DepthPointWiseConv(256, 256, 1),
-            DepthPointWiseConv(256, 512, 2),
-            
-            # 5 blocks 
-            DepthPointWiseConv(512, 512, 1),
-            DepthPointWiseConv(512, 512, 1),
-            DepthPointWiseConv(512, 512, 1),
-            DepthPointWiseConv(512, 512, 1),
-            DepthPointWiseConv(512, 512, 1),
 
-            # last blocks
-            DepthPointWiseConv(512, 1024, 2),
-            DepthPointWiseConv(1024, 1024, 1)
+class AlexNet(nn.Module):
+    def __init__(self, number_classes):
+        super(AlexNet, self).__init__()
+
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=96, 
+            kernel_size=(11,11), stride=4, padding=0),
+            nn.BatchNorm2d(96),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
-        # avg pooling
-        self.avgpool = nn.AvgPool2d(1)
-        self.classfier = nn.Sequential(
-            nn.Linear(1024, n_classes)
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=96, out_channels=256,
+            kernel_size=(5,5), stride=1, padding=2),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(in_channels=256, out_channels=384,
+            kernel_size=(3,3), stride=1, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+
+        self.layer4 = nn.Sequential(
+            nn.Conv2d(in_channels=384, out_channels=384,
+            kernel_size=(3,3), stride=1, padding=1),
+            nn.BatchNorm2d(384),
+            nn.ReLU()
+        )
+
+        self.layer5 = nn.Sequential(
+            nn.Conv2d(in_channels=384, out_channels=256,
+            kernel_size=(3,3), stride=1, padding=1),
+            nn.BatchNorm2d(384),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3, stride=2)
+        )
+
+        self.fc1 = nn.Sequential(
+            nn.Dropout2d(.5),
+            nn.Linear(in_features=9216, out_features=4096),
+            nn.ReLU(),
+        )
+
+        self.fc2 = (
+            nn.Dropout2d(.5),
+            nn.Linear(in_features=4096, out_features=4096),
+            nn.ReLU(),
+        )
+
+        self.fc3 = (
+            nn.Dropout2d(.5),
+            nn.Linear(in_features=4096, out_features=number_classes),
+            nn.ReLU(),
+        )
+    
     def forward(self, x):
         x = x.to(device)
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.classfier(x)
-        return x
-    
-net = MobileNet(10)
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = self.layer5(out)
+        out = out.reshape(x.size(0), -1)
+        out = self.fc1(out)
+        out = self.fc2(out)
+        out = self.fc3(out)
+        return out
+
+
+net = AlexNet(10)
 criterion = nn.CrossEntropyLoss()
 optim = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001)
 net.to(device)
@@ -153,4 +173,3 @@ if __name__ == "__main__":
                                             shuffle=False, num_workers=2)
     
     train(10, trainloader, testloader)
-    

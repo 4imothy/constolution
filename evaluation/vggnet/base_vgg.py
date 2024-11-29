@@ -104,3 +104,70 @@ class VGG16(nn.Module):
         out = torch.softmax(out, dim=1)
         return out
 
+net = VGG16(10)
+criterion = nn.CrossEntropyLoss()
+optim = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001)
+net.to(device)
+N_CLASSES = 10
+
+def train(epochs, train_loader, test_loader):
+    net.train()
+    print(f"{'Epoch':<6} {'Train Loss':<12} {'Train Acc':<12} {'Test Loss':<12} {'Test Acc':<12}")
+    for epoch in range(epochs):
+        e_loss = 0
+        train_count = 0
+        correct_train = 0
+        for images, labels in train_loader:
+            images = images.to(device)
+            labels = labels.to(device)
+            optim.zero_grad()
+            outputs = net(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optim.step()
+            e_loss += loss.item()
+
+            _, predicted = torch.max(outputs, 1)
+            train_count += labels.size(0)
+            correct_train += (predicted == labels).sum().item()
+
+        train_accuracy = 100 * correct_train / train_count
+        train_loss = e_loss / len(train_loader)
+        net.eval()
+        correct_test = 0
+        test_count = 0
+        test_loss = 0
+        with torch.no_grad():
+            for images, labels in test_loader:
+                images = images.to(device)
+                labels = labels.to(device)
+                outputs = net(images)
+                loss = criterion(outputs, labels)
+                test_loss += loss
+                _, predicted = torch.max(outputs, 1)
+                test_count += labels.size(0)
+                correct_test += (predicted == labels).sum().item()
+            test_accuracy = 100 * correct_test / test_count
+            test_loss = test_loss / len(test_loader)
+        epoch_str = f'{epoch+1}/{epochs}'
+        print(f'{epoch_str:<6} {train_loss:<12.4f}{train_accuracy:<12.2f} {test_loss:<12.2f} {test_accuracy:<12.2f}')
+
+
+
+    # save key metrics in json file after an epoch is done
+    
+    print('Finished Training')
+
+if __name__ == "__main__":
+    # download dataset here and get train and dataloaders here
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                        download=True, transform=transform)
+    trainloader= torch.utils.data.DataLoader(trainset, batch_size=64,
+                                            shuffle=True, num_workers=2)
+
+    testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                        download=True, transform=transform)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64,
+                                            shuffle=False, num_workers=2)
+    
+    train(10, trainloader, testloader)
