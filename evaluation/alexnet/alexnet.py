@@ -3,7 +3,6 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 import torch.optim as optim
 import torchvision
-import torch.nn.functional as F
 
 
 #set device
@@ -13,24 +12,14 @@ device = torch.device(
     )
 )
 
-transform = transforms.Compose(
-    [transforms.ToTensor(),
+transform = transforms.Compose([
+    transforms.Resize((227, 227)),
+    transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.2, 0.2, 0.2))])
 
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
-trainloader= torch.utils.data.DataLoader(trainset, batch_size=16,
-                                        shuffle=True, num_workers=2)
-
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                    download=True, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=16,
-                                        shuffle=False, num_workers=2)
 
 classes = ('plane', 'car', 'bird', 'cat',
         'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-
 
 class AlexNet(nn.Module):
     def __init__(self, number_classes):
@@ -38,72 +27,68 @@ class AlexNet(nn.Module):
 
         self.layer1 = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=96, 
-            kernel_size=(11,11), stride=4, padding=0),
+            kernel_size=11, stride=4, padding=0),
             nn.BatchNorm2d(96),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
         self.layer2 = nn.Sequential(
             nn.Conv2d(in_channels=96, out_channels=256,
-            kernel_size=(5,5), stride=1, padding=2),
+            kernel_size=5, stride=1, padding=2),
             nn.BatchNorm2d(256),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
         self.layer3 = nn.Sequential(
             nn.Conv2d(in_channels=256, out_channels=384,
-            kernel_size=(3,3), stride=1, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU()
+            kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(384),
+            nn.ReLU(inplace=True)
         )
 
         self.layer4 = nn.Sequential(
             nn.Conv2d(in_channels=384, out_channels=384,
-            kernel_size=(3,3), stride=1, padding=1),
+            kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(384),
-            nn.ReLU()
+            nn.ReLU(inplace=True)
         )
 
         self.layer5 = nn.Sequential(
             nn.Conv2d(in_channels=384, out_channels=256,
-            kernel_size=(3,3), stride=1, padding=1),
-            nn.BatchNorm2d(384),
-            nn.ReLU(),
+            kernel_size=5, stride=1, padding=2),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
+        self.avgpool = nn.AvgPool2d(6)
+
         self.fc1 = nn.Sequential(
-            nn.Dropout2d(.5),
+            nn.Dropout(),
             nn.Linear(in_features=9216, out_features=4096),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
         )
 
-        self.fc2 = (
-            nn.Dropout2d(.5),
-            nn.Linear(in_features=4096, out_features=4096),
-            nn.ReLU(),
-        )
-
-        self.fc3 = (
-            nn.Dropout2d(.5),
+        self.fc2 = nn.Sequential(
+            nn.Dropout(),
             nn.Linear(in_features=4096, out_features=number_classes),
-            nn.ReLU(),
         )
+
+        
     
     def forward(self, x):
         x = x.to(device)
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = self.layer5(out)
-        out = out.reshape(x.size(0), -1)
-        out = self.fc1(out)
-        out = self.fc2(out)
-        out = self.fc3(out)
-        return out
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.layer5(x)
+        x = x.view(x.size(0), 9216)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        return x
 
 
 net = AlexNet(10)

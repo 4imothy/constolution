@@ -5,6 +5,9 @@ import torchvision
 import torchvision.transforms as transforms
 import constolution as ct
 import pandas as pd
+from . import pd_kernels
+
+
 device = torch.device(
     'cuda' if torch.cuda.is_available() else (
         'mps' if torch.backends.mps.is_available() else 'cpu'
