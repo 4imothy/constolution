@@ -7,32 +7,42 @@ import torch.nn.functional as F
 Kernels = pd_kernels.Kernels
 
 class Constolution2D(nn.Module):
-
-    # TODO need to take the hparams from user (sigma)
     def __init__(self, type: Kernels, in_channels: int, out_channels: int,
-                 spatial_size: Union[int, Tuple[int, int]], stride=1,
-                 padding=1, dilation=1, groups=1, bias=True, depthwise=False, **kwargs):
+                spatial_size: Union[int, Tuple[int, int]], stride=1,
+                padding=1, dilation=1, groups=1, bias=True, depthwise=False, **kwargs):
+    
         super(Constolution2D, self).__init__()
-        if depthwise:
-            assert out_channels % in_channels == 0
-            groups = in_channels
 
-        self.weight = nn.Parameter(pd_kernels.to_tensor(type, in_channels,
-                                                        out_channels,
-                                                        spatial_size, groups,
-                                                        **kwargs),
-                                   requires_grad=False)
+        if isinstance(spatial_size, int):
+            spatial_size = (spatial_size, spatial_size)
+
+        if depthwise:
+            assert out_channels % in_channels == 0, "out_channels must be divisible by in_channels for depthwise convolution"
+            groups = in_channels
+            
+        self.weight = nn.Parameter(
+            pd_kernels.to_tensor(type, in_channels, out_channels, spatial_size, groups, **kwargs),
+            requires_grad=False
+        )
+
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
         self.groups = groups
+        
         if bias:
-            self.bias = torch.empty(out_channels)
+            self.bias = nn.Parameter(torch.zeros(out_channels), requires_grad=True)
         else:
-            bias = None
-
+            self.bias = None
+            
     def forward(self, x: torch.Tensor):
-        return torch.nn.functional.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+        self.weight = self.weight.to(x.device)
+        if self.bias is not None:
+            self.bias = self.bias.to(x.device)
+        
+        return torch.nn.functional.conv2d(
+            x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups
+        )
 
 class BaseInceptionConstolution2D(nn.Module):
     def __init__(self, operators: Sequence[Union[nn.Sequential, Constolution2D]],
