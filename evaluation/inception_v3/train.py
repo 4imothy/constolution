@@ -1,20 +1,20 @@
 import os
+import sys
 import torch
 from torch import nn, optim
-import torchvision
 import csv
 import time
-from ..utils import load_cifar10_data
+from ..utils import load_cifar10_data, load_caltech256_data
+from . import model_with_pd, model_base
 
-BASE = True
-
+# TODO when doing the one with pd make sure its statedict can be saved the same way
 def initialize_csv_writer(csv_filename):
     file = open(csv_filename, mode='w', newline='')
     writer = csv.writer(file)
     writer.writerow(['Epoch', 'Time (s)', 'Train Accuracy', 'Val Accuracy'])
     return writer
 
-def main():
+def main(base: bool):
     num_epochs = 100
     batch_size = 128
     image_size = 299
@@ -22,8 +22,8 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     train_loader, valid_loader = load_cifar10_data(batch_size, image_size)
-    model = build_model(num_classes, device)
-    if BASE:
+    model = build_model(base, num_classes, device)
+    if base:
         end = 'base'
     else:
         end = 'predefined'
@@ -76,19 +76,26 @@ def main():
         print(f'Validation Accuracy: {val_accuracy:.2f}%')
         elapsed_time = time.time() - start_time
         writer.writerow([epoch + 1, elapsed_time, train_accuracy, val_accuracy])
-        if val_accuracy >= 0.95:
+        if val_accuracy >= 95:
             return
 
-def build_model(num_classes, device):
-    if BASE:
-        model = torchvision.models.inception_v3(init_weights=True)
-        model.aux_logits = True
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
+    final_model_save_path = os.path.join(os.path.dirname(__file__), f'cifar10_{end}_final_model.pth')
+    torch.save(model.state_dict(), final_model_save_path)
+    print(f'Final model saved to {final_model_save_path}')
+
+def build_model(base: bool, num_classes, device):
+    if base:
+        model = model_base.Inception3(num_classes, True)
         model = model.to(device)
         return model
     else:
-        print('predef not defined')
-        exit(1)
+        model = model_with_pd.Inception3(num_classes)
+        model = model.to(device)
+        return model
 
 if __name__ == '__main__':
-    main()
+    if sys.argv[1] == 'base':
+        main(True)
+    elif sys.argv[1] == 'pd':
+        main(False)
+    assert False and 'incorrect argument'
