@@ -5,6 +5,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import torchvision.models as models
+import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -45,6 +46,7 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 num_epochs = 25
 best_val_acc = 0.0
 
+start_time = time.time()
 for epoch in range(num_epochs):
     resnet18.train()
     running_loss = 0.0
@@ -80,15 +82,15 @@ for epoch in range(num_epochs):
     
     val_acc = 100. * val_correct / val_total
     
-    if val_acc > best_val_acc:
-        best_val_acc = val_acc
-        torch.save(resnet18.state_dict(), "best_resnet18_cifar10.pth")
+    # if val_acc > best_val_acc:
+    #     best_val_acc = val_acc
+    #     torch.save(resnet18.state_dict(), "best_resnet18_cifar10.pth")
     
     scheduler.step() 
     
-    print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Acc: {val_acc:.2f}%")
-
-print("Training complete. Best Validation Accuracy:", best_val_acc)
+    # print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Acc: {val_acc:.2f}%")
+end_time = time.time()
+elapsed_time = end_time - start_time
 
 resnet18.eval()
 test_correct, test_total = 0, 0
@@ -102,3 +104,4 @@ with torch.no_grad():
 
 test_acc = 100. * test_correct / test_total
 print(f"Test Accuracy: {test_acc:.2f}%")
+print(f"Elapsed time: {elapsed_time} seconds")

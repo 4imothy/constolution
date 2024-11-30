@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 import sys
 import os
+import time
 
 sys.path.append(os.path.abspath("../../src/constolution"))
 from block_try import EarlyBlock, MiddleBlock
@@ -137,6 +138,8 @@ scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[8, 16, 22], ga
 num_epochs = 25
 best_val_acc = 0.0
 
+start_time = time.time()
+
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
@@ -176,10 +179,26 @@ for epoch in range(num_epochs):
         best_val_acc = val_acc
         torch.save(model.state_dict(), "best_custom_resnet.pth")
 
-    print(f"Epoch [{epoch+1}/{num_epochs}], "
-          f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, "
-          f"Val Acc: {val_acc:.2f}%")
+    # print(f"Epoch [{epoch+1}/{num_epochs}], "
+    #       f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, "
+    #       f"Val Acc: {val_acc:.2f}%")
 
     scheduler.step()
+    
+end_time = time.time()
 
-print("Training complete. Best Validation Accuracy:", best_val_acc)
+model.eval()
+test_correct, test_total = 0, 0
+with torch.no_grad():
+    for inputs, labels in test_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
+        outputs = model(inputs)
+        _, predicted = outputs.max(1)
+        test_total += labels.size(0)
+        test_correct += predicted.eq(labels).sum().item()
+
+test_acc = 100. * test_correct / test_total
+elapsed_time = end_time - start_time
+
+print(f"Elapsed time: {elapsed_time} seconds")
+print("Testing Accuracy: {:.2f}%".format(test_acc))
