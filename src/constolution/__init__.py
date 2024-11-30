@@ -2,6 +2,7 @@ from typing import Tuple, Union, Sequence
 import torch
 from torch import nn
 from . import pd_kernels
+import torch.nn.functional as F
 
 Kernels = pd_kernels.Kernels
 
@@ -71,3 +72,60 @@ class EdgeInception(BaseInceptionConstolution2D):
                      [Kernels.VerticalEdge, Kernels.HorizontalEdge,
                       Kernels.SobelVerticalEdge, Kernels.SobelHorizontalEdge]]
         super().__init__(operators, out_channels * len(operators))
+
+
+class earlyBlock(nn.Module):
+
+    def __init__(self, input_channels, output_channels, stride):
+        super(earlyBlock, self).__init__()
+        
+        # early pre-defined filters matrix operation on Gabor
+        self.filter1 = Constolution2D(Kernels.Gabor, 
+        input_channels, output_channels, stride=stride)
+
+        self.filter2 = Constolution2D(Kernels.SobelHorizontalEdge, 
+        input_channels, output_channels, stride=stride) # DECIDE HORIZONTAL VS VERT
+
+        self.filter3 = Constolution2D(Kernels.Schmid, 
+        input_channels, output_channels, stride=stride)
+
+        self.filter4 = Constolution2D(Constolution2D.Gaussian, 
+        input_channels, output_channels, stride=stride)
+        # FIFTH KERNEL TBD
+
+    "gabor, sobel, schmidit, gaussian, *five_one"
+
+    """ORDERING: FLEXILITY, FORWARD FUNCTION, TAKES IN LIST, THEN DEFINE WHATS 
+    IN THE LIST, COMBINATION WITHIN LIST"""
+
+    """Instaniating filters later on, not setting filters"""
+
+    """WE MIGHT NEED TO FIGURE IF WE NEED TO PASS it in"""
+    def forward(self, x):
+        pass
+
+
+class sillyBlock(nn.Module):
+
+    def init(self, input_channels, output_channels, stride):
+        super(sillyBlock, self).init()
+        "kernel1, kernel2, kernel3, kernel4, kernel5"
+        self.filter1 = Constolution2D(Kernels.Gabor, 
+            input_channels, output_channels, stride=stride)
+
+        self.filter2 = Constolution2D(Kernels.Gabor, 
+            input_channels, output_channels, stride=stride)
+
+        self.filter3 = Constolution2D(Kernels.Gabor, 
+            input_channels, output_channels, stride=stride)
+
+        self.filter4 = Constolution2D(Kernels.Gabor, 
+            input_channels, output_channels, stride=stride)
+
+        self.kernels = nn.ModuleList([self.filter1, self.filter2,self.filter3,self.filter4])
+        self.alpha = nn.Parameter(torch.ones(len(self.kernels)) / len(self.kernels))
+
+    def forward(self, x):
+        outputs = [kernel(x) for kernel in self.kernels]
+        weighted_output = sum(F.softmax(self.alpha, dim=0)[i] * outputs[i] for i in range(len(outputs)))
+        return weighted_output
