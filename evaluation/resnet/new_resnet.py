@@ -127,9 +127,9 @@ model = model.to(device)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60, 90], gamma=0.1)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[8, 16, 22], gamma=0.1)
 
-num_epochs = 50
+num_epochs = 25
 best_val_acc = 0.0
 
 for epoch in range(num_epochs):
