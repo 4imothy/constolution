@@ -15,7 +15,7 @@ def initialize_csv_writer(csv_filename):
     return writer
 
 def main():
-    num_epochs = 200
+    num_epochs = 100
     batch_size = 128
     image_size = 299
     num_classes = 10
@@ -23,7 +23,11 @@ def main():
 
     train_loader, valid_loader = load_cifar10_data(batch_size, image_size)
     model = build_model(num_classes, device)
-    writer = initialize_csv_writer(os.path.join(os.path.dirname(__file__), 'cifar10_base.csv'))
+    if BASE:
+        end = 'base'
+    else:
+        end = 'predefined'
+    writer = initialize_csv_writer(os.path.join(os.path.dirname(__file__), f'cifar10_{end}.csv'))
 
     loss_fn = nn.CrossEntropyLoss().to(device)
     optimizer = optim.SGD(model.parameters(), lr=0.05, momentum=0.9, weight_decay=1e-4)
@@ -76,11 +80,15 @@ def main():
             return
 
 def build_model(num_classes, device):
-    model = torchvision.models.inception_v3(init_weights=True)
-    model.aux_logits = True
-    model.fc = nn.Linear(model.fc.in_features, num_classes)
-    model = model.to(device)
-    return model
+    if BASE:
+        model = torchvision.models.inception_v3(init_weights=True)
+        model.aux_logits = True
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        model = model.to(device)
+        return model
+    else:
+        print('predef not defined')
+        exit(1)
 
 if __name__ == '__main__':
     main()
