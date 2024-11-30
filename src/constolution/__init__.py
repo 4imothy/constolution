@@ -75,6 +75,13 @@ class EarlyEdgeInception(BaseInceptionConstolution2D):
                Kernels.SobelVerticalEdge, Kernels.SobelHorizontalEdge,
                Kernels.Gaussian]
 
+class MiddleInception(BaseInceptionConstolution2D):
+    KERNELS = [Kernels.Gaussian,
+               Kernels.Box,
+               Kernels.Identity,
+                Kernels.Average,
+               ]
+
 class earlyBlock(nn.Module):
 
     def __init__(self, input_channels, output_channels, stride):

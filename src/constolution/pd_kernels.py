@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, Tuple
+from typing import Optional, Union, Tuple
 from enum import Enum, auto
 import torch
 import cv2
@@ -15,6 +15,7 @@ class Kernels(Enum):
     Identity = auto()
     Schmid = auto()
     Laplacian = auto()
+    Average = auto()
     random_basis_gaussian = auto()
     random_basis_uniform = auto()
     random_basis_gaussian_sparse = auto()
@@ -46,6 +47,8 @@ def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size:
             kernel = gabor(height, width, **kwargs)
         case Kernels.Identity:
             kernel = identity(height, width, **kwargs)
+        case Kernels.Average:
+            kernel = average(height, width, **kwargs)
         case Kernels.Schmid:
             kernel = schmid(height, width, **kwargs)
         case Kernels.Laplacian:
@@ -86,6 +89,12 @@ def vertical_edge(height, width) -> np.ndarray:
     kernel[:, :half_width - (1 - width % 2)] = -1
     kernel[:, half_width + 1:] = 1
 
+    return kernel
+
+def average(height, width, denominator: Optional[int] = None) -> np.ndarray:
+    kernel = np.ones((height, width), dtype=np.float32)
+    denominator = denominator or kernel.size
+    kernel /= denominator
     return kernel
 
 def sobel_horizontal_edge(height, width) -> np.ndarray:
