@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Sequence
+from typing import Tuple, Union, Sequence, List
 import torch
 from torch import nn
 from . import pd_kernels
@@ -37,55 +37,66 @@ class Constolution2D(nn.Module):
 class BaseInceptionConstolution2D(nn.Module):
     def __init__(self, operators: Sequence[Union[nn.Sequential, Constolution2D]],
                  total_out_channels: int,
+                 out_channels: int,
                  weighted_convolution=True):
         self.operators = operators
         self.weight = None
         if weighted_convolution:
-            self.weight = nn.Conv2d(total_out_channels, 1, (1,1), bias=True)
+            self.weight = nn.Conv2d(total_out_channels, out_channels, (1,1), bias=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         batched = x.dim() == 4
-        outs = []
-        for op in self.operators:
-            outs.append(op(x))
+        outs = [op(x) for op in self.operators]
+        cat = torch.cat(outs, dim=1 if batched else 0)
         if self.weight is not None:
-            return self.weight(torch.cat(outs, dim=1 if batched else 0))
-        return torch.cat(outs, dim=1 if batched else 0)
+            return self.weight(cat)
+        return cat
 
-class EdgeInception(BaseInceptionConstolution2D):
-    def __init__(self, in_channels: int, out_channels: int,
+class BaseInceptionSharedHParams(BaseInceptionConstolution2D):
+    KERNELS: List[Kernels] = []
+    def __init__(self, kerns: List[Kernels], in_channels: int, out_channels: int, weighted_out_channels: int,
                  spatial_size: Union[int, Tuple[int, int]], stride=1,
-                 padding=1, dilation=1, groups=1, bias=True, depthwise=False):
+                 padding=1, dilation=1, groups=1, bias=True, depthwise=False, weighted_convolution=True):
         operators = [Constolution2D(kern, in_channels, out_channels,
                                     spatial_size, stride, padding, dilation,
                                     groups, bias, depthwise) for kern in
-                     [Kernels.VerticalEdge, Kernels.HorizontalEdge,
-                      Kernels.SobelVerticalEdge, Kernels.SobelHorizontalEdge]]
-        super().__init__(operators, out_channels * len(operators))
+                     kerns]
+        total_out_channels = out_channels * len(operators)
+        super().__init__(operators, total_out_channels, weighted_out_channels, weighted_convolution=weighted_convolution)
 
+class EdgeInception(BaseInceptionSharedHParams):
+    KERNELS = [
+            Kernels.VerticalEdge, Kernels.HorizontalEdge,
+            Kernels.SobelVerticalEdge, Kernels.SobelHorizontalEdge
+            ]
+
+class EarlyEdgeInception(BaseInceptionConstolution2D):
+    KERNELS = [Kernels.Gabor, Kernels.Schmid,
+               Kernels.SobelVerticalEdge, Kernels.SobelHorizontalEdge,
+               Kernels.Gaussian]
 
 class earlyBlock(nn.Module):
 
     def __init__(self, input_channels, output_channels, stride):
         super(earlyBlock, self).__init__()
-        
+
         # early pre-defined filters matrix operation on Gabor
-        self.filter1 = Constolution2D(Kernels.Gabor, 
+        self.filter1 = Constolution2D(Kernels.Gabor,
         input_channels, output_channels, stride=stride)
 
-        self.filter2 = Constolution2D(Kernels.SobelHorizontalEdge, 
+        self.filter2 = Constolution2D(Kernels.SobelHorizontalEdge,
         input_channels, output_channels, stride=stride) # DECIDE HORIZONTAL VS VERT
 
-        self.filter3 = Constolution2D(Kernels.Schmid, 
+        self.filter3 = Constolution2D(Kernels.Schmid,
         input_channels, output_channels, stride=stride)
 
-        self.filter4 = Constolution2D(Constolution2D.Gaussian, 
+        self.filter4 = Constolution2D(Constolution2D.Gaussian,
         input_channels, output_channels, stride=stride)
         # FIFTH KERNEL TBD
 
     "gabor, sobel, schmidit, gaussian, *five_one"
 
-    """ORDERING: FLEXILITY, FORWARD FUNCTION, TAKES IN LIST, THEN DEFINE WHATS 
+    """ORDERING: FLEXILITY, FORWARD FUNCTION, TAKES IN LIST, THEN DEFINE WHATS
     IN THE LIST, COMBINATION WITHIN LIST"""
 
     """Instaniating filters later on, not setting filters"""
@@ -100,16 +111,16 @@ class sillyBlock(nn.Module):
     def init(self, input_channels, output_channels, stride):
         super(sillyBlock, self).init()
         "kernel1, kernel2, kernel3, kernel4, kernel5"
-        self.filter1 = Constolution2D(Kernels.Gabor, 
+        self.filter1 = Constolution2D(Kernels.Gabor,
             input_channels, output_channels, stride=stride)
 
-        self.filter2 = Constolution2D(Kernels.Gabor, 
+        self.filter2 = Constolution2D(Kernels.Gabor,
             input_channels, output_channels, stride=stride)
 
-        self.filter3 = Constolution2D(Kernels.Gabor, 
+        self.filter3 = Constolution2D(Kernels.Gabor,
             input_channels, output_channels, stride=stride)
 
-        self.filter4 = Constolution2D(Kernels.Gabor, 
+        self.filter4 = Constolution2D(Kernels.Gabor,
             input_channels, output_channels, stride=stride)
 
         self.kernels = nn.ModuleList([self.filter1, self.filter2,self.filter3,self.filter4])
