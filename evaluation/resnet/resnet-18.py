@@ -9,16 +9,24 @@ import torchvision.models as models
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 transform = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
+    transforms.Resize((224, 224)),
+    transforms.RandomCrop(224, padding=4),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010])
+    transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.1620])
+])
+
+transform_test = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.4914, 0.4822, 0.4465],
+                         std=[0.2023, 0.1994, 0.2010]),
 ])
 
 train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
 
-train_size = int(0.8 * len(train_dataset))
+train_size = int(0.9 * len(train_dataset))
 val_size = len(train_dataset) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
 
@@ -32,6 +40,7 @@ resnet18 = resnet18.to(device)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(resnet18.parameters(), lr=0.001)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
 num_epochs = 25
 best_val_acc = 0.0
@@ -74,6 +83,8 @@ for epoch in range(num_epochs):
     if val_acc > best_val_acc:
         best_val_acc = val_acc
         torch.save(resnet18.state_dict(), "best_resnet18_cifar10.pth")
+    
+    scheduler.step() 
     
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Acc: {val_acc:.2f}%")
 
