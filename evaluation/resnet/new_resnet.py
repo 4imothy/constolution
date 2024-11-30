@@ -52,7 +52,7 @@ class CustomResNet(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
 
-        self.early_stage = nn.Sequential(
+        self.layer1 = nn.Sequential(
             EarlyBlock(input_channels=64, output_channels=64, stride=1, spatial_size=(3, 3)),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
@@ -61,12 +61,12 @@ class CustomResNet(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        self.layer1 = nn.Sequential(
+        self.layer2 = nn.Sequential(
             ResidualBlock(64, 64, stride=1),
             ResidualBlock(64, 64, stride=1)
         )
 
-        self.layer2 = nn.Sequential(
+        self.layer3 = nn.Sequential(
             MiddleBlock(input_channels=64, output_channels=128, stride=2, spatial_size=(3, 3)),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
@@ -75,14 +75,9 @@ class CustomResNet(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        self.layer3 = nn.Sequential(
-            ResidualBlock(128, 256, stride=2),
-            ResidualBlock(256, 256, stride=1)
-        )
-
         self.layer4 = nn.Sequential(
-            ResidualBlock(256, 512, stride=2),
-            ResidualBlock(512, 512, stride=1)
+            ResidualBlock(128, 256, stride=2),
+            ResidualBlock(256, 512, stride=1)
         )
 
         self.global_pool = nn.AdaptiveAvgPool2d(1)
@@ -93,7 +88,6 @@ class CustomResNet(nn.Module):
 
     def forward(self, x):
         x = self.stem(x)
-        x = self.early_stage(x)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
@@ -120,9 +114,10 @@ train_size = int(0.9 * len(train_dataset))
 val_size = len(train_dataset) - train_size
 train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=4)
-val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False, num_workers=4)
-test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False, num_workers=4)
+BATCH_SIZE = 256
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
 num_classes = 10
 model = CustomResNet(num_classes=num_classes)
