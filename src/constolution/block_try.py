@@ -66,7 +66,7 @@ from constolution.pd_kernels import to_tensor, Kernels
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from constolution.pd_kernels import to_tensor, Kernels
 
 class EarlyBlock(nn.Module):
     def __init__(self, input_channels, output_channels, stride, spatial_size):
@@ -80,27 +80,27 @@ class EarlyBlock(nn.Module):
             Kernels.Gaussian
         ]
 
-        # Retrieve actual kernels
         kernels = []
         for kernel_type in kernel_list:
             kernel = to_tensor(
                 type=kernel_type,
-                in_channels=1,  # Kernels are 2D
+                in_channels=1,
                 out_channels=1,
                 spatial_size=spatial_size,
                 groups=1
             )
-            kernels.append(kernel)
-
-        kernel_size = kernels[0].shape[-1]
-        num_kernels = len(kernels)
+            kernels.append(kernel.squeeze(0).squeeze(0))
 
         kernels = torch.stack(kernels, dim=0)
-        kernels = kernels.repeat(1, input_channels, 1, 1)
-        weight = kernels.view(-1, 1, kernel_size, kernel_size)
-        weight = weight.repeat(output_channels // input_channels, 1, 1, 1)
-        weight = weight.expand(-1, input_channels, -1, -1)
-        
+
+        num_kernels, kH, kW = kernels.shape
+        kernel_size = kH
+
+        kernels = kernels.unsqueeze(1).unsqueeze(1)
+        kernels = kernels.repeat(1, output_channels, input_channels, 1, 1)
+
+        weight = kernels.view(-1, input_channels, kH, kW)
+
         self.conv = nn.Conv2d(
             in_channels=input_channels,
             out_channels=output_channels * num_kernels,
@@ -149,18 +149,18 @@ class MiddleBlock(nn.Module):
                 spatial_size=spatial_size,
                 groups=1
             )
-            kernels.append(kernel)
-
-        kernel_size = kernels[0].shape[-1]
-        num_kernels = len(kernels)
+            kernels.append(kernel.squeeze(0).squeeze(0))
 
         kernels = torch.stack(kernels, dim=0)
-        kernels = kernels.repeat(1, input_channels, 1, 1)
-        weight = kernels.view(-1, 1, kernel_size, kernel_size)
-        repeat_count = output_channels // input_channels
-        weight = weight.repeat(repeat_count, 1, 1, 1)
-        weight = weight.expand(-1, input_channels, -1, -1)
-        
+
+        num_kernels, kH, kW = kernels.shape
+        kernel_size = kH
+
+        kernels = kernels.unsqueeze(1).unsqueeze(1)
+        kernels = kernels.repeat(1, output_channels, input_channels, 1, 1)
+
+        weight = kernels.view(-1, input_channels, kH, kW)
+
         self.conv = nn.Conv2d(
             in_channels=input_channels,
             out_channels=output_channels * num_kernels,
