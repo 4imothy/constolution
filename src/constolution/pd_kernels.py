@@ -22,7 +22,6 @@ class Kernels(Enum):
     random_basis_uniform_sparse = auto()
 
 # TODO for the edge ones we can swap between left and right and top and bottom
-# TODO can do average
 
 def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size:
               Union[int, Tuple[int,int]], groups: int, **kwargs) -> torch.Tensor:
@@ -70,7 +69,6 @@ def to_tensor(type: Kernels, in_channels: int, out_channels: int, spatial_size:
 
 
 def gaussian(height, width, sigma=1.0) -> np.ndarray:
-    print(sigma)
     y, x = np.meshgrid(
         np.linspace(-(height // 2), height // 2, height),
         np.linspace(-(width // 2), width // 2, width),
@@ -148,7 +146,7 @@ def horizontal_edge(height, width) -> np.ndarray:
     return h_k
 
 def box(height, width):
-    return np.ones((height, width)) / (height * width)
+    return np.ones((height, width))
 
 def gabor(height, width, sigma =1 , theta = 0, lambda_ = 1, gamma = 1,psi = 1,ktype = cv2.CV_32F)-> np.ndarray:
     kernel = cv2.getGaborKernel((height, width), sigma, theta, lambda_, gamma, psi, ktype)

@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Sequence, List
+from typing import Tuple, Union, Sequence, List, Optional
 import torch
 from torch import nn
 from . import pd_kernels
@@ -29,7 +29,7 @@ class Constolution2D(nn.Module):
         if bias:
             self.bias = torch.empty(out_channels)
         else:
-            bias = None
+            self.bias = None
 
     def forward(self, x: torch.Tensor):
         return torch.nn.functional.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
@@ -39,6 +39,7 @@ class BaseInceptionConstolution2D(nn.Module):
                  total_out_channels: int,
                  out_channels: int,
                  weighted_convolution=True):
+        super().__init__()
         self.operators = operators
         self.weight = None
         if weighted_convolution:
@@ -54,14 +55,16 @@ class BaseInceptionConstolution2D(nn.Module):
 
 class BaseInceptionSharedHParams(BaseInceptionConstolution2D):
     KERNELS: List[Kernels] = []
-    def __init__(self, in_channels: int, out_channels: int, weighted_out_channels: int,
-                 kernel_size: Union[int, Tuple[int, int]], stride=1,
-                 padding=1, dilation=1, groups=1, bias=True, depthwise=False, weighted_convolution=True):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size:
+                 Union[int, Tuple[int, int]], stride=1, padding=1, dilation=1,
+                 groups=1, bias=True, depthwise=False, weighted_out_channels:
+                 Optional[int] = None, weighted_convolution=True):
         operators = [Constolution2D(kern, in_channels, out_channels,
                                     kernel_size, stride, padding, dilation,
                                     groups, bias, depthwise) for kern in
                      self.KERNELS]
         total_out_channels = out_channels * len(operators)
+        weighted_out_channels = weighted_out_channels or total_out_channels
         super().__init__(operators, total_out_channels, weighted_out_channels, weighted_convolution=weighted_convolution)
 
 class EdgeInception(BaseInceptionSharedHParams):
@@ -70,16 +73,16 @@ class EdgeInception(BaseInceptionSharedHParams):
             Kernels.SobelVerticalEdge, Kernels.SobelHorizontalEdge
             ]
 
-class EarlyEdgeInception(BaseInceptionConstolution2D):
+class EarlyEdgeInception(BaseInceptionSharedHParams):
     KERNELS = [Kernels.Gabor, Kernels.Schmid,
                Kernels.SobelVerticalEdge, Kernels.SobelHorizontalEdge,
                Kernels.Gaussian]
 
-class MiddleInception(BaseInceptionConstolution2D):
+class MiddleInception(BaseInceptionSharedHParams):
     KERNELS = [Kernels.Gaussian,
                Kernels.Box,
                Kernels.Identity,
-                Kernels.Average,
+               Kernels.Average,
                ]
 
 class earlyBlock(nn.Module):
