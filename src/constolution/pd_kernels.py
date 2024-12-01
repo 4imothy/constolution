@@ -149,8 +149,7 @@ def box(height, width):
     return np.ones((height, width))
 
 def gabor(height, width, sigma =1 , theta = 0, lambda_ = 1, gamma = 1,psi = 1,ktype = cv2.CV_32F)-> np.ndarray:
-    kernel = cv2.getGaborKernel((height, width), sigma, theta, lambda_, gamma, psi, ktype)
-
+    kernel = cv2.getGaborKernel((width, height), sigma, theta, lambda_, gamma, psi, ktype)
     return kernel
 
 def identity(height, width) -> np.ndarray:
