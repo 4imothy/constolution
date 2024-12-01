@@ -232,8 +232,9 @@ def train_and_evaluate(model, num_epochs=25):
     print(f"Elapsed time: {elapsed_time:.2f} seconds")
 
 # Train and evaluate both models
+print("\nTraining CustomResNet:")
+train_and_evaluate(CustomResNet(num_classes=10))
+
 print("Training ResNet18:")
 train_and_evaluate(ResNet18(num_classes=10))
 
-print("\nTraining CustomResNet:")
-train_and_evaluate(CustomResNet(num_classes=10))
