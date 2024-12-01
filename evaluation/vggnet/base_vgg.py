@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 import torch.optim as optim
 import torchvision
-
+import pandas as pd
 #set device
 device = torch.device(
     'cuda' if torch.cuda.is_available() else (
@@ -17,13 +17,13 @@ transform = transforms.Compose(
 
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
-trainloader= torch.utils.data.DataLoader(trainset, batch_size=16,
-                                        shuffle=True, num_workers=2)
+trainloader= torch.utils.data.DataLoader(trainset, batch_size=64,
+                                        shuffle=True, num_workers=9)
 
 testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                     download=True, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=16,
-                                        shuffle=False, num_workers=2)
+testloader = torch.utils.data.DataLoader(testset, batch_size=64,
+                                        shuffle=False, num_workers=9)
 
 classes = ('plane', 'car', 'bird', 'cat',
         'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
@@ -35,46 +35,59 @@ class VGG16(nn.Module):
         super(VGG16, self).__init__()
         self.blck1  = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=64, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2)
         )
 
         self.blck2 = nn.Sequential(
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=128, out_channels=128, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2)
         )
 
         self.blck3 = nn.Sequential(
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2)
         )
 
         self.blck4 = nn.Sequential(
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2)
         )
 
         self.blck5 = nn.Sequential(
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3,3), padding=1),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2)
         )
@@ -83,12 +96,14 @@ class VGG16(nn.Module):
             #nn.Linear(25088, 4096),
             #nn.Linear(2048, 4096),
             ##CHANGED ABOVE FOR CIFAR
+            #nn.Dropout(0.2),
             nn.Linear(512, 4096),
             nn.ReLU(inplace=True),
-            nn.Dropout(0.5),
+            #nn.Dropout(0.5),
+            #nn.Dropout(0.2),
             nn.Linear(4096,4096),
             nn.ReLU(inplace=True),
-            nn.Dropout(0.5),
+            #nn.Dropout(0.5),
             nn.Linear(4096,number_classes)
 
         )
@@ -104,70 +119,61 @@ class VGG16(nn.Module):
         out = torch.softmax(out, dim=1)
         return out
 
-net = VGG16(10)
-criterion = nn.CrossEntropyLoss()
-optim = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001)
-net.to(device)
-N_CLASSES = 10
+def train(model, epochs = 1):
+    criterion = nn.CrossEntropyLoss()
+    #increasing learning rate helped significantly
+    #optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5 )
+    #optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.005, weight_decay = 0.005, momentum = 0.9)  
 
-def train(epochs, train_loader, test_loader):
-    net.train()
-    print(f"{'Epoch':<6} {'Train Loss':<12} {'Train Acc':<12} {'Test Loss':<12} {'Test Acc':<12}")
+
+
+    loop = []
+    training_loss = []
+    training_accuracy = []
+    test_loss = []
+    test_accuracy = []
+    header = ["Loop", "Train Loss", "Train Acc %", "Test Loss", "Test Acc %"]
     for epoch in range(epochs):
-        e_loss = 0
-        train_count = 0
-        correct_train = 0
-        for images, labels in train_loader:
-            images = images.to(device)
-            labels = labels.to(device)
-            optim.zero_grad()
-            outputs = net(images)
+        loop.append(epoch + 1)
+        correct = 0
+        total = 0
+        running_loss = 0
+        for i, data in enumerate(trainloader):
+            print(f"Epoch {epoch + 1}, Batch {i + 1}/{len(trainloader)}")
+            inputs, labels = data[0].to(device), data[1].to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
-            optim.step()
-            e_loss += loss.item()
+            optimizer.step()
+            running_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+        training_loss.append(running_loss / len(trainloader))
+        training_accuracy.append(100 * correct / total)
 
-            _, predicted = torch.max(outputs, 1)
-            train_count += labels.size(0)
-            correct_train += (predicted == labels).sum().item()
-
-        train_accuracy = 100 * correct_train / train_count
-        train_loss = e_loss / len(train_loader)
-        net.eval()
-        correct_test = 0
-        test_count = 0
-        test_loss = 0
+        correct = 0
+        total = 0
         with torch.no_grad():
-            for images, labels in test_loader:
-                images = images.to(device)
-                labels = labels.to(device)
-                outputs = net(images)
+            running_loss = 0
+            for data in testloader:
+                inputs, labels = data[0].to(device), data[1].to(device)
+
+                outputs = model(inputs)
                 loss = criterion(outputs, labels)
-                test_loss += loss
-                _, predicted = torch.max(outputs, 1)
-                test_count += labels.size(0)
-                correct_test += (predicted == labels).sum().item()
-            test_accuracy = 100 * correct_test / test_count
-            test_loss = test_loss / len(test_loader)
-        epoch_str = f'{epoch+1}/{epochs}'
-        print(f'{epoch_str:<6} {train_loss:<12.4f}{train_accuracy:<12.2f} {test_loss:<12.2f} {test_accuracy:<12.2f}')
-
-
-
-    # save key metrics in json file after an epoch is done
-    
-    print('Finished Training')
+                running_loss += loss.item()
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+            test_loss.append(running_loss/len(testloader))
+            test_accuracy.append(100 * correct / total)
+    data = {header[0]: loop,header[1]: training_loss,header[2]: training_accuracy,header[3]:test_loss,header[4]:test_accuracy}
+    print(pd.DataFrame(data))
 
 if __name__ == "__main__":
-    # download dataset here and get train and dataloaders here
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
-    trainloader= torch.utils.data.DataLoader(trainset, batch_size=64,
-                                            shuffle=True, num_workers=2)
+    model = VGG16(number_classes = 10).to(device)
+    model = torch.compile(model, backend="aot_eager")
+    train(model= model, epochs = 10)
 
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                        download=True, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64,
-                                            shuffle=False, num_workers=2)
-    
-    train(10, trainloader, testloader)
