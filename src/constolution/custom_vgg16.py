@@ -33,21 +33,21 @@ class earlyBlock(nn.Module):
     def __init__(self, input_channels, output_channels, stride, max_size = 5):
         super(earlyBlock, self).__init__()
         "kernel1, kernel2, kernel3, kernel4, kernel5"
-        self.filter1 = ct.Constolution2D(ct.Kernels.Gabor, 
-            input_channels, output_channels, stride=stride, spatial_size = (3,3))
-        
-        self.filter2 = ct.Constolution2D(ct.Kernels.Gaussian, 
-            input_channels, output_channels, stride=stride, spatial_size = (3,3))
-        
-        self.filter3 = ct.Constolution2D(ct.Kernels.SobelHorizontalEdge, 
-            input_channels, output_channels, stride=stride, spatial_size = (3,3))
-        
-        self.filter4 = ct.Constolution2D(ct.Kernels.SobelVerticalEdge, 
-            input_channels, output_channels, stride=stride, spatial_size = (3,3))
-        
-        self.filter5 = ct.Constolution2D(ct.Kernels.Schmid, 
-            input_channels, output_channels, stride=stride, spatial_size = (3,3))
-        
+        self.filter1 = ct.Constolution2D(ct.Kernels.Gabor,
+            input_channels, output_channels, stride=stride, kernel_size = (3,3))
+
+        self.filter2 = ct.Constolution2D(ct.Kernels.Gaussian,
+            input_channels, output_channels, stride=stride, kernel_size = (3,3))
+
+        self.filter3 = ct.Constolution2D(ct.Kernels.SobelHorizontalEdge,
+            input_channels, output_channels, stride=stride, kernel_size = (3,3))
+
+        self.filter4 = ct.Constolution2D(ct.Kernels.SobelVerticalEdge,
+            input_channels, output_channels, stride=stride, kernel_size = (3,3))
+
+        self.filter5 = ct.Constolution2D(ct.Kernels.Schmid,
+            input_channels, output_channels, stride=stride, kernel_size = (3,3))
+
         self.kernels = nn.ModuleList([self.filter1, self.filter2,self.filter3,self.filter4,self.filter5 ])
 
         self.max_size = max_size
@@ -59,7 +59,7 @@ class earlyBlock(nn.Module):
             out = kernel(out)
 
         return out
-    
+
 
 
 

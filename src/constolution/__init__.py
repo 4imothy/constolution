@@ -10,7 +10,7 @@ class Constolution2D(nn.Module):
 
     # TODO need to take the hparams from user (sigma)
     def __init__(self, type: Kernels, in_channels: int, out_channels: int,
-                 spatial_size: Union[int, Tuple[int, int]], stride=1,
+                 kernel_size: Union[int, Tuple[int, int]], stride=1,
                  padding=1, dilation=1, groups=1, bias=True, depthwise=False, **kwargs):
         super(Constolution2D, self).__init__()
         if depthwise:
@@ -19,7 +19,7 @@ class Constolution2D(nn.Module):
 
         self.weight = nn.Parameter(pd_kernels.to_tensor(type, in_channels,
                                                         out_channels,
-                                                        spatial_size, groups,
+                                                        kernel_size, groups,
                                                         **kwargs),
                                    requires_grad=False)
         self.stride = stride
@@ -54,13 +54,13 @@ class BaseInceptionConstolution2D(nn.Module):
 
 class BaseInceptionSharedHParams(BaseInceptionConstolution2D):
     KERNELS: List[Kernels] = []
-    def __init__(self, kerns: List[Kernels], in_channels: int, out_channels: int, weighted_out_channels: int,
-                 spatial_size: Union[int, Tuple[int, int]], stride=1,
+    def __init__(self, in_channels: int, out_channels: int, weighted_out_channels: int,
+                 kernel_size: Union[int, Tuple[int, int]], stride=1,
                  padding=1, dilation=1, groups=1, bias=True, depthwise=False, weighted_convolution=True):
         operators = [Constolution2D(kern, in_channels, out_channels,
-                                    spatial_size, stride, padding, dilation,
+                                    kernel_size, stride, padding, dilation,
                                     groups, bias, depthwise) for kern in
-                     kerns]
+                     self.KERNELS]
         total_out_channels = out_channels * len(operators)
         super().__init__(operators, total_out_channels, weighted_out_channels, weighted_convolution=weighted_convolution)
 
