@@ -80,11 +80,12 @@ class EarlyBlock(nn.Module):
             Kernels.Gaussian
         ]
 
+        # Retrieve actual kernels
         kernels = []
         for kernel_type in kernel_list:
             kernel = to_tensor(
                 type=kernel_type,
-                in_channels=1,
+                in_channels=1,  # Kernels are 2D
                 out_channels=1,
                 spatial_size=spatial_size,
                 groups=1
@@ -94,9 +95,11 @@ class EarlyBlock(nn.Module):
         kernel_size = kernels[0].shape[-1]
         num_kernels = len(kernels)
 
-        kernels = torch.stack(kernels, dim=0).squeeze(1)
+        kernels = torch.stack(kernels, dim=0)
         kernels = kernels.repeat(1, input_channels, 1, 1)
-        weight = kernels.view(-1, input_channels, kernel_size, kernel_size)
+        weight = kernels.view(-1, 1, kernel_size, kernel_size)
+        weight = weight.repeat(output_channels // input_channels, 1, 1, 1)
+        weight = weight.expand(-1, input_channels, -1, -1)
         
         self.conv = nn.Conv2d(
             in_channels=input_channels,
@@ -125,7 +128,6 @@ class EarlyBlock(nn.Module):
         out = self.combine(out)
         return out
 
-
 class MiddleBlock(nn.Module):
     def __init__(self, input_channels, output_channels, stride, spatial_size):
         super(MiddleBlock, self).__init__()
@@ -152,10 +154,13 @@ class MiddleBlock(nn.Module):
         kernel_size = kernels[0].shape[-1]
         num_kernels = len(kernels)
 
-        kernels = torch.stack(kernels, dim=0).squeeze(1)
+        kernels = torch.stack(kernels, dim=0)
         kernels = kernels.repeat(1, input_channels, 1, 1)
-        weight = kernels.view(-1, input_channels, kernel_size, kernel_size)
-
+        weight = kernels.view(-1, 1, kernel_size, kernel_size)
+        repeat_count = output_channels // input_channels
+        weight = weight.repeat(repeat_count, 1, 1, 1)
+        weight = weight.expand(-1, input_channels, -1, -1)
+        
         self.conv = nn.Conv2d(
             in_channels=input_channels,
             out_channels=output_channels * num_kernels,
