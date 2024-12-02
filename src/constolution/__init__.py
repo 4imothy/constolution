@@ -27,9 +27,9 @@ class Constolution2D(nn.Module):
         self.dilation = dilation
         self.groups = groups
         if bias:
-            self.bias = torch.empty(out_channels)
+            self.bias = nn.Parameter(torch.zeros(out_channels))
         else:
-            self.bias = None
+            self.register_parameter('bias', None)
 
     def forward(self, x: torch.Tensor):
         return torch.nn.functional.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
@@ -40,7 +40,7 @@ class BaseInceptionConstolution2D(nn.Module):
                  out_channels: int,
                  weighted_convolution=True):
         super().__init__()
-        self.operators = operators
+        self.operators = nn.ModuleList(operators)
         self.weight = None
         if weighted_convolution:
             self.weight = nn.Conv2d(total_out_channels, out_channels, (1,1), bias=True)
