@@ -4,3 +4,4 @@ venv
 datasets
 __pycache__
 evaluation/alexnet/data/
+clone_key
