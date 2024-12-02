@@ -86,7 +86,6 @@ class ResNet18(nn.Module):
         x = self.fc(x)
         return x
 
-# CustomResNet Model
 class CustomResNet(nn.Module):
     def __init__(self, num_classes):
         super(CustomResNet, self).__init__()
@@ -101,9 +100,9 @@ class CustomResNet(nn.Module):
             EarlyBlock(input_channels=64, output_channels=64, stride=1, spatial_size=(3, 3)),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            EarlyBlock(input_channels=64, output_channels=64, stride=1, spatial_size=(3, 3)),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
+            # EarlyBlock(input_channels=64, output_channels=64, stride=1, spatial_size=(3, 3)),
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(inplace=True),
         )
 
         self.layer2 = nn.Sequential(
@@ -115,9 +114,9 @@ class CustomResNet(nn.Module):
             MiddleBlock(input_channels=64, output_channels=128, stride=2, spatial_size=(3, 3)),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
-            MiddleBlock(input_channels=128, output_channels=128, stride=1, spatial_size=(3, 3)),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
+            # MiddleBlock(input_channels=128, output_channels=128, stride=1, spatial_size=(3, 3)),
+            # nn.BatchNorm2d(128),
+            # nn.ReLU(inplace=True),
         )
 
         self.layer4 = nn.Sequential(
