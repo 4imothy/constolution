@@ -45,16 +45,10 @@ class TransformDataset(Dataset):
     def __getitem__(self, idx):
         image, label = self.dataset[idx]
         image = self.transform(image)
-        target = one_hot_encode(label)
-        return image, target
+        return image, label
 
 def to_rgb(x):
     return x.convert('RGB')
-
-def one_hot_encode(target, num_classes=257):
-    one_hot = torch.zeros(num_classes)
-    one_hot[target] = 1
-    return one_hot
 
 def load_caltech256_data(batch_size, image_size, split_ratio=0.8):
     train_transforms = transforms.Compose([
@@ -64,7 +58,6 @@ def load_caltech256_data(batch_size, image_size, split_ratio=0.8):
         transforms.ToTensor(),
         transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STDDEV),
     ])
-
     val_transforms = transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.Lambda(to_rgb),

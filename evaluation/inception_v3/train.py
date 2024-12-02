@@ -52,7 +52,6 @@ def main(base: bool, cifar: bool):
             outputs = model(images)
             if isinstance(outputs, tuple):
                 outputs = outputs[0]
-            print(outputs.shape)
             loss = loss_fn(outputs, targets)
             loss.backward()
             optimizer.step()
