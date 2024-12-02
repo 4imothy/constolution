@@ -19,11 +19,12 @@ class Inception3(nn.Module):
         self.Conv2d_1a_3x3 = BasicConv2d(3, 32, kernel_size=3, stride=2)
         self.Conv2d_2a_3x3 = ct.EarlyEdgeInception(32, 7, kernel_size=3,
                                                    weighted_convolution=True,
-                                                   weighted_out_channels=32)
-        self.Conv2d_2b_3x3 = BasicConv2d(32, 64, kernel_size=3, padding=1)
+                                                   weighted_out_channels=64)
         self.maxpool1 = nn.MaxPool2d(kernel_size=3, stride=2)
         self.Conv2d_3b_1x1 = BasicConv2d(64, 80, kernel_size=1)
-        self.Conv2d_4a_3x3 = BasicConv2d(80, 192, kernel_size=3)
+        self.Conv2d_4a_3x3 = ct.EarlyEdgeInception(80, 38, kernel_size=3,
+                                                   weighted_convolution=True,
+                                                   weighted_out_channels=192)
         self.maxpool2 = nn.MaxPool2d(kernel_size=3, stride=2)
         self.Mixed_5b = InceptionA(192, pool_features=32)
         self.Mixed_5c = PDInceptionA(256, pool_features=64)
@@ -36,7 +37,7 @@ class Inception3(nn.Module):
         self.AuxLogits: Optional[nn.Module] = None
         if aux_logits:
             self.AuxLogits = InceptionAux(768, num_classes)
-        self.Mixed_7a = InceptionD(768)
+        self.Mixed_7a = PDInceptionD(768)
         self.Mixed_7b = InceptionE(1280)
         self.Mixed_7c = InceptionE(2048)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -55,8 +56,6 @@ class Inception3(nn.Module):
         x = self.Conv2d_1a_3x3(x)
         # N x 32 x 149 x 149
         x = self.Conv2d_2a_3x3(x)
-        # N x 32 x 147 x 147
-        x = self.Conv2d_2b_3x3(x)
         # N x 64 x 147 x 147
         x = self.maxpool1(x)
         # N x 64 x 73 x 73
@@ -144,8 +143,8 @@ class PDInceptionA(nn.Module):
         self.branch5x5_2 = BasicPDConv2d(ct.Kernels.Box, 48, 64, kernel_size=5, padding=2)
 
         self.branch3x3dbl_1 = BasicConv2d(in_channels, 64, kernel_size=1)
-        self.branch3x3dbl_2 = BasicPDConv2d(ct.Kernels.Average, 64, 96, kernel_size=3, padding=1)
-        self.branch3x3dbl_3 = BasicConv2d(96, 96, kernel_size=3, padding=1)
+        self.branch3x3dbl_2 = BasicPDConv2d(ct.Kernels.Box, 64, 96, kernel_size=3, padding=1)
+        self.branch3x3dbl_3 = BasicPDConv2d(ct.Kernels.Schmid, 96, 96, kernel_size=3, padding=1)
 
         self.branch_pool = BasicConv2d(in_channels, pool_features, kernel_size=1)
 
@@ -299,11 +298,11 @@ class InceptionC(nn.Module):
         outputs = [branch1x1, branch7x7, branch7x7dbl, branch_pool]
         return torch.cat(outputs, 1)
 
-class InceptionD(nn.Module):
+class PDInceptionD(nn.Module):
     def __init__(self, in_channels: int) -> None:
         super().__init__()
         self.branch3x3_1 = BasicConv2d(in_channels, 192, kernel_size=1)
-        self.branch3x3_2 = BasicConv2d(192, 320, kernel_size=3, stride=2)
+        self.branch3x3_2 = BasicPDConv2d(ct.Kernels.Gabor, 192, 320, kernel_size=3, stride=2, padding=0)
 
         self.branch7x7x3_1 = BasicConv2d(in_channels, 192, kernel_size=1)
         self.branch7x7x3_2 = BasicConv2d(192, 192, kernel_size=(1, 7), padding=(0, 3))

@@ -14,19 +14,23 @@ def initialize_csv_writer(csv_filename):
     writer.writerow(['Epoch', 'Time (s)', 'Train Accuracy', 'Val Accuracy'])
     return writer
 
-def main(base: bool):
-    num_epochs = 100
-    batch_size = 128
+def main(base: bool, cifar: bool):
+    num_epochs = 20
+    batch_size = 64
     image_size = 299
     num_classes = 10
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    train_loader, valid_loader = load_cifar10_data(batch_size, image_size)
+    if cifar:
+        train_loader, valid_loader = load_cifar10_data(batch_size, image_size)
+    else:
+        train_loader, valid_loader = load_caltech256_data(batch_size, image_size)
     model = build_model(base, num_classes, device)
     if base:
         end = 'base'
     else:
         end = 'predefined'
+
     writer = initialize_csv_writer(os.path.join(os.path.dirname(__file__), f'cifar10_{end}.csv'))
 
     loss_fn = nn.CrossEntropyLoss().to(device)
@@ -94,8 +98,10 @@ def build_model(base: bool, num_classes, device):
         return model
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'base':
-        main(True)
-    elif sys.argv[1] == 'pd':
-        main(False)
-    assert False and 'incorrect argument'
+    if sys.argv[1] not in ['base', 'pd']:
+        print(f'invalid model {sys.argv[1]}')
+        exit(1)
+    if sys.argv[2] not in ['cifar', 'caltech256']:
+        print(f'invalid dataset {sys.argv[2]}')
+        exit(1)
+    main(sys.argv[1] == 'base', sys.argv[2] == 'cifar')
