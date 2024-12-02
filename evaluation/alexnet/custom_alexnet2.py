@@ -8,8 +8,6 @@ import os
 import time
 import csv
 from thop import profile, clever_format
-
-
 sys.path.append(os.path.abspath("../../src/constolution"))
 from block_try import EarlyBlock, MiddleBlock
 from block import EarlyBlockFeatureMapWeighted
@@ -53,7 +51,7 @@ class CustomAlexNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
-
+    
         self.layer2 = nn.Sequential(
             #Middle Block here?
             #MiddleBlock(96, 256, 1, (5,5)),
@@ -64,7 +62,7 @@ class CustomAlexNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
-
+        
         self.layer3 = nn.Sequential(
             nn.Conv2d(in_channels=256, out_channels=384, 
             kernel_size=3, stride=1, padding=1),
@@ -91,7 +89,7 @@ class CustomAlexNet(nn.Module):
         )
 
         self.avgpool = nn.AvgPool2d(6)
-
+#43264
         self.fc1 = nn.Sequential(
             nn.Dropout(),
             nn.Linear(in_features=9216, out_features=4096),
@@ -123,8 +121,9 @@ net.to(device)
 N_CLASSES = 10
 
 def train(epochs, train_loader, test_loader):
-    writer = initialize_csv_writer(os.path.join(os.path.dirname(__file__), f'model4.csv'))
+    writer = initialize_csv_writer(os.path.join(os.path.dirname(__file__), f'custom_model7.csv'))   
     net.train()
+
     input1 = torch.randn(1, 3, 227, 227).to(device)
     flops, params = profile(net, inputs=(input1, ), verbose=False)
     flops_str, params_str = clever_format([flops, params], "%.3f")
@@ -142,6 +141,7 @@ def train(epochs, train_loader, test_loader):
     total_flops = flops_per_iteration * num_batches * epochs
     total_flops_str = clever_format([total_flops], "%.3f")[0]
     print(f"Estimated Total FLOPs during training: {total_flops_str}")
+
     start_time = time.time()
     print(f"{'Epoch':<6} {'Train Loss':<12} {'Train Acc':<12} {'Test Loss':<12} {'Test Acc':<12}")
     for epoch in range(epochs):
@@ -187,7 +187,7 @@ def train(epochs, train_loader, test_loader):
     
     finish_time = time.time()
     duration = finish_time - start_time
-    torch.save(net.state_dict(), 'model/custom_model4.pth')
+    torch.save(net.state_dict(), 'model/custom_model7.pth')
     # save key metrics in json file after an epoch is done
     print(f"Elapsed time: {duration:.2f} seconds")
     print('Finished Training')

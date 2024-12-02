@@ -3,7 +3,18 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 import torch.optim as optim
 import torchvision
+import csv
+import os
+import time
 
+def initialize_csv_writer(csv_filename):
+    file = open(csv_filename, mode='w', newline='')
+    writer = csv.writer(file)
+    writer.writerow(['Epoch', 'Time (s)', 'Train Accuracy', 'Val Accuracy'])
+    return writer
+
+
+os.makedirs('model', exist_ok=True)
 
 #set device
 device = torch.device(
@@ -98,7 +109,9 @@ net.to(device)
 N_CLASSES = 10
 
 def train(epochs, train_loader, test_loader):
+    writer = initialize_csv_writer(os.path.join(os.path.dirname(__file__), f'basemodel.csv'))
     net.train()
+    start_time = time.time()
     print(f"{'Epoch':<6} {'Train Loss':<12} {'Train Acc':<12} {'Test Loss':<12} {'Test Acc':<12}")
     for epoch in range(epochs):
         e_loss = 0
@@ -136,11 +149,14 @@ def train(epochs, train_loader, test_loader):
                 correct_test += (predicted == labels).sum().item()
             test_accuracy = 100 * correct_test / test_count
             test_loss = test_loss / len(test_loader)
+        elapsed_time = time.time() - start_time
         epoch_str = f'{epoch+1}/{epochs}'
         print(f'{epoch_str:<6} {train_loss:<12.4f}{train_accuracy:<12.2f} {test_loss:<12.2f} {test_accuracy:<12.2f}')
-
-
-
+        writer.writerow([epoch + 1, elapsed_time, train_accuracy, test_accuracy])
+    finish_time = time.time()
+    duration = finish_time - start_time
+    print(f"Elapsed time: {duration:.2f} seconds")
+    torch.save(net.state_dict(), 'model/base_model.pth')
     # save key metrics in json file after an epoch is done
     
     print('Finished Training')
