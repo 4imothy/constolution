@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader, random_split
 import time
 import sys
 import os
+from thop import profile, clever_format
 
 sys.path.append(os.path.abspath("../../src/constolution"))
 from block_try import EarlyBlock, MiddleBlock
@@ -230,10 +231,92 @@ def train_and_evaluate(model, num_epochs=25):
     print(f"Test Accuracy: {test_acc:.2f}%")
     print(f"Elapsed time: {elapsed_time:.2f} seconds")
 
-# Train and evaluate both models
+def train_and_evaluate_with_metrics(model, num_epochs=25):
+    model = model.to(device)
+    
+    input = torch.randn(1, 3, 224, 224).to(device)
+    flops, params = profile(model, inputs=(input, ), verbose=False)
+    flops_str, params_str = clever_format([flops, params], "%.3f")
+    print(f"\nModel FLOPs: {flops_str}")
+    print(f"Total Learnable Parameters: {params_str}")
+
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total Learnable Parameters (exact): {total_params}")
+
+    num_batches = len(train_loader)
+    total_gradient_updates = num_batches * num_epochs
+    print(f"Total Gradient Updates: {total_gradient_updates}")
+
+    flops_per_batch = flops * BATCH_SIZE
+    
+    flops_per_iteration = flops_per_batch * 3
+    total_flops = flops_per_iteration * num_batches * num_epochs
+    total_flops_str = clever_format([total_flops], "%.3f")[0]
+    print(f"Estimated Total FLOPs during training: {total_flops_str}")
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+
+    best_val_acc = 0.0
+
+    start_time = time.time()
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss = 0.0
+        correct, total = 0, 0
+
+        for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += labels.size(0)
+            correct += predicted.eq(labels).sum().item()
+
+        train_acc = 100. * correct / total
+        train_loss = running_loss / len(train_loader)
+
+        model.eval()
+        val_correct, val_total = 0, 0
+        with torch.no_grad():
+            for inputs, labels in val_loader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                outputs = model(inputs)
+                _, predicted = outputs.max(1)
+                val_total += labels.size(0)
+                val_correct += predicted.eq(labels).sum().item()
+
+        val_acc = 100. * val_correct / val_total
+        scheduler.step()
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+
+    model.eval()
+    test_correct, test_total = 0, 0
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            _, predicted = outputs.max(1)
+            test_total += labels.size(0)
+            test_correct += predicted.eq(labels).sum().item()
+
+    test_acc = 100. * test_correct / test_total
+    print(f"Test Accuracy: {test_acc:.2f}%")
+    print(f"Elapsed time: {elapsed_time:.2f} seconds")
+
 print("\nTraining CustomResNet:")
-train_and_evaluate(CustomResNet(num_classes=10))
+train_and_evaluate_with_metrics(CustomResNet(num_classes=10))
 
 print("Training ResNet18:")
-train_and_evaluate(ResNet18(num_classes=10))
+train_and_evaluate_with_metrics(ResNet18(num_classes=10))
 
