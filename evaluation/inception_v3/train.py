@@ -7,7 +7,6 @@ import time
 from ..utils import load_cifar10_data, load_caltech256_data
 from . import model_with_pd, model_base
 
-# TODO when doing the one with pd make sure its statedict can be saved the same way
 def initialize_csv_writer(csv_filename):
     file = open(csv_filename, mode='w', newline='')
     writer = csv.writer(file)
@@ -16,20 +15,23 @@ def initialize_csv_writer(csv_filename):
 
 def main(base: bool, cifar: bool):
     num_epochs = 20
-    batch_size = 64
     image_size = 299
-    num_classes = 10
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if base:
+        batch_size = 64
+        num_classes = 10
+        end = 'base'
+    else:
+        batch_size = 32
+        num_classes = 257
+        end = 'predefined'
 
     if cifar:
         train_loader, valid_loader = load_cifar10_data(batch_size, image_size)
     else:
         train_loader, valid_loader = load_caltech256_data(batch_size, image_size)
+
     model = build_model(base, num_classes, device)
-    if base:
-        end = 'base'
-    else:
-        end = 'predefined'
 
     writer = initialize_csv_writer(os.path.join(os.path.dirname(__file__), f'cifar10_{end}.csv'))
 
@@ -50,6 +52,7 @@ def main(base: bool, cifar: bool):
             outputs = model(images)
             if isinstance(outputs, tuple):
                 outputs = outputs[0]
+            print(outputs.shape)
             loss = loss_fn(outputs, targets)
             loss.backward()
             optimizer.step()
@@ -89,7 +92,7 @@ def main(base: bool, cifar: bool):
 
 def build_model(base: bool, num_classes, device):
     if base:
-        model = model_base.Inception3(num_classes, True)
+        model = model_base.Inception3(num_classes)
         model = model.to(device)
         return model
     else:

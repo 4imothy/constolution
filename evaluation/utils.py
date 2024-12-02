@@ -2,6 +2,7 @@ import os
 import torchvision
 from torch.utils.data import DataLoader, random_split, Dataset
 import torchvision.transforms as transforms
+import torch
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STDDEV = [0.229, 0.224, 0.225]
@@ -43,12 +44,17 @@ class TransformDataset(Dataset):
 
     def __getitem__(self, idx):
         image, label = self.dataset[idx]
-        if self.transform:
-            image = self.transform(image)
-        return image, label
+        image = self.transform(image)
+        target = one_hot_encode(label)
+        return image, target
 
 def to_rgb(x):
     return x.convert('RGB')
+
+def one_hot_encode(target, num_classes=257):
+    one_hot = torch.zeros(num_classes)
+    one_hot[target] = 1
+    return one_hot
 
 def load_caltech256_data(batch_size, image_size, split_ratio=0.8):
     train_transforms = transforms.Compose([
