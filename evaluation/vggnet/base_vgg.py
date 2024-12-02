@@ -4,6 +4,7 @@ import torchvision.transforms as transforms
 import torch.optim as optim
 import torchvision
 import pandas as pd
+import time
 #set device
 device = torch.device(
     'cuda' if torch.cuda.is_available() else (
@@ -11,8 +12,11 @@ device = torch.device(
     )
 )
 
+
+
+
 transform = transforms.Compose(
-    [transforms.ToTensor(),
+    [transforms.Resize((227, 227)), transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.2, 0.2, 0.2))])
 
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
@@ -93,14 +97,14 @@ class VGG16(nn.Module):
         )
 
         self.blck6 = nn.Sequential(
-            #nn.Linear(25088, 4096),
+            nn.Dropout(0.5),
+            nn.Linear(25088, 4096),
             #nn.Linear(2048, 4096),
             ##CHANGED ABOVE FOR CIFAR
-            #nn.Dropout(0.2),
-            nn.Linear(512, 4096),
+            #nn.Dropout(0.5),
             nn.ReLU(inplace=True),
             #nn.Dropout(0.5),
-            #nn.Dropout(0.2),
+            nn.Dropout(0.5),
             nn.Linear(4096,4096),
             nn.ReLU(inplace=True),
             #nn.Dropout(0.5),
@@ -134,6 +138,7 @@ def train(model, epochs = 1):
     test_loss = []
     test_accuracy = []
     header = ["Loop", "Train Loss", "Train Acc %", "Test Loss", "Test Acc %"]
+    start_time = time.time()
     for epoch in range(epochs):
         loop.append(epoch + 1)
         correct = 0
@@ -169,11 +174,16 @@ def train(model, epochs = 1):
                 correct += (predicted == labels).sum().item()
             test_loss.append(running_loss/len(testloader))
             test_accuracy.append(100 * correct / total)
+    finish_time = time.time()
+    duration = finish_time - start_time
     data = {header[0]: loop,header[1]: training_loss,header[2]: training_accuracy,header[3]:test_loss,header[4]:test_accuracy}
     print(pd.DataFrame(data))
+    pd.DataFrame(data).to_csv('model_vgg_base.csv', index=False)
+    print(f"final time:  {duration:.2f} seconds")
 
 if __name__ == "__main__":
     model = VGG16(number_classes = 10).to(device)
     model = torch.compile(model, backend="aot_eager")
     train(model= model, epochs = 10)
+    torch.save(model.state_dict(), "model_vgg_base.pth")
 
