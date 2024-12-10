@@ -6,11 +6,26 @@ from typing import Tuple
 def learnable_param_count(mod: nn.Module) -> int:
     return sum(p.numel() for p in mod.parameters() if p.requires_grad)
 
-def flop_backward(mod, input_size: Tuple):
+def flop_forward(mod, input_size: Tuple, device=None):
     istrain = mod.training
     mod.eval()
 
-    input = torch.randn(input_size)
+    input = torch.randn(input_size).to(device)
+
+    flop_counter = FlopCounterMode(display=False)
+    with flop_counter:
+        _ = mod(input)
+    total_flops =  flop_counter.get_total_flops()
+    if istrain:
+        mod.train()
+    return total_flops
+
+
+def flop_backward(mod, input_size: Tuple, device=None):
+    istrain = mod.training
+    mod.eval()
+
+    input = torch.randn(input_size).to(device)
 
     flop_counter = FlopCounterMode(display=False)
     loss = mod(input).sum()
@@ -20,4 +35,3 @@ def flop_backward(mod, input_size: Tuple):
     if istrain:
         mod.train()
     return total_flops
-

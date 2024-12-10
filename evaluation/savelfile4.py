@@ -11,8 +11,9 @@ from thop import profile, clever_format
 import csv
 from torch.utils.flop_counter import FlopCounterMode
 from typing import Tuple
-sys.path.append(os.path.abspath("../../src/constolution"))
+sys.path.append(os.path.abspath("../src/constolution"))
 from block import EarlyBlockFeatureMapWeighted
+from counts import learnable_param_count, flop_backward, flop_forward
 
 #set device
 device = torch.device(
@@ -40,26 +41,6 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=1,
 
 classes = ('plane', 'car', 'bird', 'cat',
         'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-def learnable_param_count(mod: nn.Module) -> int:
-    return sum(p.numel() for p in mod.parameters() if p.requires_grad)
-
-def flop_backward(mod, input_size: Tuple):
-    istrain = mod.training
-    mod.eval()
-    mod = mod.to(device)
-
-    input = torch.randn(input_size).to(device)
-
-    flop_counter = FlopCounterMode(display=False)
-    loss = mod(input).sum()
-    with flop_counter:
-        loss.backward()
-    total_flops = flop_counter.get_total_flops()
-    if istrain:
-        mod.train()
-    return total_flops
-
 
 class VGG16(nn.Module):
 
@@ -159,13 +140,13 @@ def train(model, epochs = 10):
     #increasing learning rate helped significantly
     #optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5 )
     #optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.005, weight_decay = 0.005, momentum = 0.9) 
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.005, weight_decay = 0.005, momentum = 0.9)
     """
     for module in model.modules():
         if hasattr(module, 'total_ops'):
             del module.total_ops
         if hasattr(module, 'total_params'):
-            del module.total_params 
+            del module.total_params
     """
     input_tensor = torch.randn(1, 3, 227, 227).to(device)
     flops, params = profile(model, inputs=(input_tensor,), verbose=False)
@@ -257,8 +238,10 @@ if __name__ == "__main__":
     input_size = (1, 3, 227, 227)
 
     # Count FLOPs for backward pass
-    flops = flop_backward(model, input_size)
+    flops = flop_backward(model, input_size, device)
     print(f"Backward pass FLOPs: {flops}")
+    flops = flop_forward(model, input_size, device)
+    print(f"Forward pass FLOPs: {flops}")
     #model = torch.compile(model, backend="aot_eager")
     #model.to(device)
     train(model= model, epochs = 10)
