@@ -77,7 +77,8 @@ class EarlyBlock(nn.Module):
             Kernels.Schmid,
             Kernels.SobelHorizontalEdge,
             Kernels.SobelVerticalEdge,
-            Kernels.Gaussian
+            Kernels.Gaussian,
+            Kernels.Identity
         ]
 
         kernels = []
@@ -137,7 +138,8 @@ class MiddleBlock(nn.Module):
             Kernels.VerticalEdge,
             Kernels.HorizontalEdge,
             Kernels.Box,
-            Kernels.SobelVerticalEdge
+            Kernels.SobelVerticalEdge,
+            Kernels.Identity
         ]
 
         kernels = []
